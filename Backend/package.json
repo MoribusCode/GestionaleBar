@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "@fastify/cors": "^11.0.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "fastify": "^5.2.1",
+    "fastify-cors": "^6.0.3"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
