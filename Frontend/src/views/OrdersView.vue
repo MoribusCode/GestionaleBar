@@ -1,33 +1,18 @@
 <script setup>
-import ItemsTemplate from '@/components/ItemsTemplate.vue';
-import { addedToOrder } from '@/store.js';
-import { ref } from 'vue';
+import MainOrder from '@/components/MainOrder.vue';
 
-const props = defineProps({
-  items: {
-    type: Array,
-    required: true,
-    // item structure: { id: Number, name: String, price: Number, quantity: Number, category: String }
-  },
-});
-
-function addToOrder(id) {
-  let existing = addedToOrder.value.find(item => item.id === id);
-  if (existing) {
-    existing.quantity++;
-  }
-  else {
-    let item = props.items.find(item => item.id == id);
-    if (item) {
-      addedToOrder.value.push({...item, quantity: 1});
-    }
-  }
-}
+const catalog = [
+  { id: 1, name: 'Caffè', price: 1.00, category: 'Bevande' },
+  { id: 2, name: 'Aperol', price: 3.00, category: 'Bevande' },
+  { id: 3, name: 'Cicchetti', price: 3.50, category: 'Cibo' },
+  { id: 4, name: 'Gin Tonic', price: 6.00, category: 'Bevande' },
+  { id: 6, name: 'Panino', price: 5.00, category: 'Cibo' },
+  { id: 7, name: 'Acqua', price: 1.50, category: 'Bevande' },
+  { id: 8, name: 'Birra', price: 2.50, category: 'Bevande' },
+];
 
 </script>
 
 <template>
-  <div class="griglia-articoli">
-    <ItemsTemplate :items="props.items" @item-added="addToOrder" />
-  </div>
+  <div> <MainOrder :items="catalog"/> </div>
 </template>    

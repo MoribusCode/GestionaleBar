@@ -1,19 +1,39 @@
 <script setup>
-import OrdersView from '@/views/OrdersView.vue';
+import { addedToOrder } from '@/store';
+import ItemsTemplate from './ItemsTemplate.vue';
 import ActiveOrder from './ActiveOrder.vue';
 
-const catalog = [
-  { id: 1, name: 'Caffè', price: 1.00, category: 'Bevande' },
-  { id: 2, name: 'Aperol', price: 3.00, category: 'Bevande' },
-  { id: 3, name: 'Cicchetti', price: 3.50, category: 'Cibo' },
-  { id: 4, name: 'Gin Tonic', price: 6.00, category: 'Bevande' },
-];
+const props = defineProps({
+  items: {
+    type: Array,
+    required: true,
+    // item structure: { id: Number, name: String, price: Number, category: String }
+  },
+});
+
+function addToOrder(id) {
+  let existing = addedToOrder.value.find(item => item.id === id);
+  if (existing) {
+    existing.quantity++;
+  }
+  else {
+    let item = props.items.find(item => item.id == id);
+    if (item) {
+      addedToOrder.value.push({...item, quantity: 1});
+    }
+  }
+}
 
 </script>
 
 <template>
 
-    <OrdersView :items="catalog" />
-    <ActiveOrder />
+  <div class="griglia-articoli">
+    <ItemsTemplate :items="props.items" @item-added="addToOrder" />
+  </div>
+
+  <ActiveOrder />
 
 </template>
+
+  

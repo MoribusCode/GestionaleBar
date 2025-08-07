@@ -24,11 +24,5 @@ function addItem(item) {
 </template>
 
 <style scoped>
-.itemButton {
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  text-align: center;
-  user-select: none;
-}
+
 </style>

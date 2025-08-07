@@ -1,13 +1,13 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import MainOrder from './components/MainOrder.vue';
+import HomeView from './views/HomeView.vue';
 </script>
 
 <template>
 
-<MainOrder />
+<HomeView /> 
 
-  <RouterView />
+<RouterView />
 </template>
 
 <style scoped>
