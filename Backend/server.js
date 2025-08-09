@@ -1,6 +1,7 @@
 const api = require("./router");
 
 require("dotenv").config();
+
 const fastify = require("fastify") ({ logger: true });
 const cors = require("@fastify/cors");
 

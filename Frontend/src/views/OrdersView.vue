@@ -1,15 +1,23 @@
 <script setup>
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+
 import MainOrder from '@/components/MainOrder.vue';
 
-const catalog = [
-  { id: 1, name: 'Caffè', price: 1.00, category: 'Bevande' },
-  { id: 2, name: 'Aperol', price: 3.00, category: 'Bevande' },
-  { id: 3, name: 'Cicchetti', price: 3.50, category: 'Cibo' },
-  { id: 4, name: 'Gin Tonic', price: 6.00, category: 'Bevande' },
-  { id: 6, name: 'Panino', price: 5.00, category: 'Cibo' },
-  { id: 7, name: 'Acqua', price: 1.50, category: 'Bevande' },
-  { id: 8, name: 'Birra', price: 2.50, category: 'Bevande' },
-];
+const catalog = ref([]);
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://localhost:3000/api/items');
+    const data = res.data;
+
+    // fill the catalog with the data received from the backend
+    catalog.value = data;
+
+  } catch (error) {
+    console.error('Errore nel recupero degli articoli:', error);
+  }
+});
 
 </script>
 

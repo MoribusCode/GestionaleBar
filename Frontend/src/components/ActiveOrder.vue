@@ -10,7 +10,7 @@ const list = ref([]);
 
 async function storeOrder() {
     try {
-        //send the order to the backend (endpoint provissorio da sostituire)
+        //send the order to the backend
         const response = await axios.post('http://localhost:3000/api/orders', {order:list.value});
 
         console.log('Order stored successfully', response.data);
