@@ -11,7 +11,10 @@ const list = ref([]);
 async function storeOrder() {
     try {
         //send the order to the backend
-        const response = await axios.post('http://localhost:3000/api/orders', {order:list.value});
+        const response = await axios.post('http://localhost:3000/api/orders', {
+            order: list.value,
+            totalPrice: totalPrice()
+        });
 
         console.log('Order stored successfully', response.data);
 
@@ -57,7 +60,7 @@ watch(addedToOrder, handleItemsAdded,
         <h1>Comanda attiva</h1>
         <ul>
             <li class=itemList v-for="(item, index) in list" :key="index">
-                <div>
+                <div class="item-details">
                     <div>{{ item.name }} x{{ item.quantity }}</div>
                     <div>
                         <button class="btn btn-primary" @click="removeItem(index)"> - </button>
@@ -74,7 +77,17 @@ watch(addedToOrder, handleItemsAdded,
 
     <button @click="storeOrder">Invia Ordine</button>
     
+    <router-link to="/">
+        <h3>Home</h3>
+    </router-link>
 </template>
 
 
-<style scoped></style>
+<style scoped>
+
+.item-details {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+</style>

@@ -13,34 +13,36 @@ db.serialize(() => {
 
   //tabella articoli (items)
   db.run(`
-      CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        price REAL NOT NULL,
-        category TEXT
-      )
+    CREATE TABLE IF NOT EXISTS items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      price REAL NOT NULL,
+      category TEXT
+    )
   `);
 
-  //tabella ordini (orders)
-  db.run(`
-  CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    status TEXT DEFAULT 'pending'
-  )
-  `);
+  //tabella ordini (orders), per ora la togliamo
+
+  //db.run(`
+  //CREATE TABLE IF NOT EXISTS orders (
+  //  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  //  status TEXT DEFAULT 'pending'
+  //)
+  //`);
 
   //tabella dettaglio ordini(orders-items)
   db.run(`
-  CREATE TABLE IF NOT EXISTS order_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id INTEGER,
-    item_name TEXT,
-    quantity INTEGER,
-    FOREIGN KEY(order_id) REFERENCES orders(id)
-  )
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      item_name TEXT,
+      quantity INTEGER,
+      total_price DECIMAL(10,2),
+      status TEXT DEFAULT 'pending'
+    )
   `);
-    
-  db.get ('SELECT * FROM order_items', (err, row) => {
+
+  db.get('SELECT * FROM order_items', (err, row) => {
     if (err) {
       console.error('Errore nella lettura della tabella order-items: ', err.message);
       return;
@@ -68,7 +70,7 @@ db.serialize(() => {
       });
 
     } else {
-      
+
       console.log("Articoli già presenti nel DB.");
     }
   });

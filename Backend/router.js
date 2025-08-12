@@ -1,3 +1,5 @@
+const { stat } = require("fs");
+
 module.exports = function (fastify, opts, done) {
 
     const db = require("./Database/database");
@@ -8,18 +10,30 @@ module.exports = function (fastify, opts, done) {
     const dbAll = util.promisify(db.all).bind(db);
     const dbRun = util.promisify(db.run).bind(db);
 
-    // Get all orders
+    // GET all orders
     fastify.get("/orders", async (request, reply) => {
         try {
             const rows = await dbAll(`
-            SELECT orders.id, orders.status,
-            group_concat(order_items.item_name || ' x' || order_items.quantity, ', ') as items
-            FROM orders
-            LEFT JOIN order_items ON orders.id = order_items.order_id
-            GROUP BY orders.id
+            SELECT  
+                oi.order_id as id,
+                oi.status as status,
+                oi.total_price as totalPrice,
+                json_group_array(
+                    json_object(
+                        'name', oi.item_name, 
+                        'quantity', oi.quantity
+                    )
+                ) as items
+            FROM order_items oi
+            GROUP BY order_id
             `);
 
-            return rows; // Fastify will send this as JSON
+        const orders = rows.map(row => ({
+            ...row,
+            items: JSON.parse(row.items) // Convert JSON string (items) to object
+        }));
+        
+        return orders;
 
         } catch (err) {
 
@@ -27,7 +41,7 @@ module.exports = function (fastify, opts, done) {
         }
     });
 
-    // GET all items
+    // GET all items (retrieve catalog)
     fastify.get("/items", async (request, reply) => {
         try {
             const rows = await dbAll("SELECT * FROM items");
@@ -43,24 +57,30 @@ module.exports = function (fastify, opts, done) {
     fastify.post("/orders", async (request, reply) => {
 
         if (!request.body.order || !Array.isArray(request.body.order) || request.body.order.length === 0) {
-            return reply.status(400).send({ message: "Name and items are required" });
+            return reply.status(400).send({ message: "Payload not correct" });
         }
 
         try {
             const orderId = await getID();
+            const totalPrice = request.body.totalPrice || 0;
 
-            const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity) VALUES (?, ?, ?)');
+            const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity, total_price) VALUES (?, ?, ?, ?)');
             
             // Promisify stmt.run
             const stmtRun = util.promisify(insertItem.run).bind(insertItem);
 
             for (const item of request.body.order) {
-                await stmtRun(orderId, item.name, item.quantity);
+                await stmtRun(orderId, item.name, item.quantity, totalPrice);
             }
 
             insertItem.finalize(); // Clean up statement
 
-            return reply.status(201).send({ id: orderId, status: "pending", items: request.body.order});
+            return reply.status(201).send({ 
+                id: orderId, 
+                items: request.body.order,
+                status: "pending",
+                totalPrice: totalPrice
+            });
 
         } catch (err) {
             console.error("Errore durante l'inserimento dell'ordine:", err.message);
@@ -89,7 +109,7 @@ module.exports = function (fastify, opts, done) {
     async function getID() {
         const dbGet = util.promisify(db.get).bind(db);
 
-        let rows = await dbGet('SELECT MAX(order_id) AS maxId FROM order_items');
+        const rows = await dbGet('SELECT MAX(order_id) AS maxId FROM order_items');
     
         // Return max ID + 1 or 1 if no orders exist
         return rows.maxId ? rows.maxId + 1 : 1;
