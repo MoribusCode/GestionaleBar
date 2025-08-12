@@ -60,6 +60,14 @@ module.exports = function (fastify, opts, done) {
 
             insertItem.finalize(); // Clean up statement
 
+            // Alla fine di TUTTO, emetto evento websocket con ordine
+            const orderData = {
+            id: orderId,
+            items: request.body.order
+            };
+            fastify.io.emit('new-order', orderData);  // fastify.io è il websocket server (socket.io)
+
+
             return reply.status(201).send({ id: orderId, status: "pending", items: request.body.order});
 
         } catch (err) {

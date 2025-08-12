@@ -1,13 +1,20 @@
 {
   "dependencies": {
     "@fastify/cors": "^11.0.0",
+    "@fastify/http-proxy": "^11.3.0",
+    "@fastify/websocket": "^11.2.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "fastify": "^5.2.1",
-    "fastify-cors": "^6.0.3"
+    "fastify-cors": "^6.0.3",
+    "socket.io": "^4.8.1",
+    "sqlite3": "^5.1.7"
   },
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
