@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 .DS_Store
+TODO-LIST.txt
 dist
 dist-ssr
 coverage

@@ -1,48 +1,53 @@
+const api = require("./router");
+
 require("dotenv").config();
-const fastify = require("fastify")({ logger: true });
+
+const fastify = require("fastify") ({ logger: true });
 const cors = require("@fastify/cors");
+const { Server } = require("socket.io");  // socket.io server class
 
 // Enable CORS (so the frontend can communicate with the backend)
-fastify.register(cors);
-
-// In-memory orders list (Replace with a database later)
-let orders = [];
-
-// Get all orders
-fastify.get("/orders", async (request, reply) => {
-  return orders;
+fastify.register (cors, {
+  origin: true,
 });
 
-// Create a new order
-fastify.post("/orders", async (request, reply) => {
-  const { name, items } = request.body;
-  if (!name || !items) {
-    return reply.status(400).send({ message: "Name and items are required" });
-  }
+// Register the API routes
+fastify.register (api, {prefix: "/api"});
 
-  const order = { id: orders.length + 1, name, items, status: "pending" };
-  orders.push(order);
-  return reply.status(201).send(order);
-});
+// Avvio manuale del server HTTP per poterlo usare con socket.io
+const start = async () => {
+  try {
+    await fastify.listen({ 
+      port: process.env.PORT || 3000, 
+      host: process.env.HOST || "0.0.0.0" 
+    });
 
-// Mark order as completed
-fastify.put("/orders/:id", async (request, reply) => {
-  const { id } = request.params;
-  const order = orders.find((o) => o.id == id);
-  if (!order) {
-    return reply.status(404).send({ message: "Order not found" });
-  }
+    const address = fastify.server.address();
+    console.log(`Server running at ${address.address}:${address.port}`);
 
-  order.status = "completed";
-  return reply.send(order);
-});
+    // Attacco socket.io al server HTTP interno di Fastify
+    const io = new Server(fastify.server, {
+      cors: {
+        origin: "*",
+        methods: ["GET", "POST"],
+      }
+    });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-fastify.listen({ port: PORT, host: "0.0.0.0" }, (err, address) => {
-  if (err) {
+    // Salvo l'istanza socket.io dentro fastify per poterla usare in router.js (Così si possono chiamare i vari eventi)
+    fastify.io = io;
+
+    io.on("connection", (socket) => {
+      console.log("Nuovo client connesso", socket.id);
+
+      socket.on("disconnect", () => {
+        console.log("Client disconnesso", socket.id);
+      });
+    });
+
+  } catch (err) {
     console.error(err);
     process.exit(1);
   }
-  console.log(`Server running at ${address}`);
-});
+};
+
+start();
