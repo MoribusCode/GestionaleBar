@@ -11,7 +11,7 @@ const list = ref([]);
 async function storeOrder() {
     try {
         //send the order to the backend
-        const response = await axios.post('http://localhost:3000/api/orders', {
+        const response = await axios.post(`${import.meta.env.VITE_URL}/api/orders`, {
             order: list.value,
             totalPrice: totalPrice()
         });

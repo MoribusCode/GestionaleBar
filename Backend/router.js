@@ -15,17 +15,19 @@ module.exports = function (fastify, opts, done) {
         try {
             const rows = await dbAll(`
             SELECT  
-                oi.order_id as id,
-                oi.status as status,
-                oi.total_price as totalPrice,
+                o.order_id as id,
+                o.status as status,
+                o.total_price as totalPrice,
                 json_group_array(
                     json_object(
                         'name', oi.item_name, 
                         'quantity', oi.quantity
                     )
                 ) as items
-            FROM order_items oi
-            GROUP BY order_id
+            FROM orders o
+            JOIN order_items oi
+                ON oi.order_id = o.order_id
+            GROUP BY oi.order_id
             `);
 
         const orders = rows.map(row => ({
@@ -61,25 +63,37 @@ module.exports = function (fastify, opts, done) {
         }
 
         try {
-            const orderId = await getID();
             const totalPrice = request.body.totalPrice || 0;
+            await dbRun('INSERT INTO orders (total_price) VALUES (?)', totalPrice);
 
-            const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity, total_price) VALUES (?, ?, ?, ?)');
+            const dbGet = util.promisify(db.get).bind(db);
+
+            const row = await dbGet("SELECT MAX(order_id) AS order_id FROM orders");
+            const orderId = row.order_id; 
+
+            const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity) VALUES (?, ?, ?)');
             
             // Promisify stmt.run
             const stmtRun = util.promisify(insertItem.run).bind(insertItem);
 
             for (const item of request.body.order) {
-                await stmtRun(orderId, item.name, item.quantity, totalPrice);
+                await stmtRun(orderId, item.name, item.quantity);
             }
 
             insertItem.finalize(); // Clean up statement
 
+            // Alla fine di TUTTO, emetto evento websocket con ordine
+            const orderData = {
+            id: orderId,
+            items: request.body.order
+            };
+            fastify.io.emit('new-order', orderData);  // fastify.io è il websocket server (socket.io)
+
+
             return reply.status(201).send({ 
                 id: orderId, 
-                items: request.body.order,
-                status: "pending",
-                totalPrice: totalPrice
+                status: "pending", 
+                items: request.body.order
             });
 
         } catch (err) {

@@ -14,6 +14,21 @@
                 <h1>Storico</h1>
             </router-link>
         </div>
+        <div>
+            <router-link to="/cicchetti">
+                <h1>Cicchetti</h1>
+            </router-link>
+        </div>
+        <div>
+            <router-link to="/birre">
+                <h1>Birre</h1>
+        </router-link>
+        </div>
+        <div>
+            <router-link to="/drinks">
+            <h1>Drinks</h1>
+        </router-link>
+        </div>
     </div> 
 </template>
 

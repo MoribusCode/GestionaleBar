@@ -11,7 +11,7 @@ onMounted(() => {
 
 async function getOrders() {
     try {
-        const response = await axios.get('http://localhost:3000/api/orders');
+        const response = await axios.get(`${import.meta.env.VITE_URL}/api/orders`);
         orders.value = response.data;
         console.log('Orders retrieved successfully', orders.value);
 

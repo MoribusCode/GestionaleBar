@@ -8,7 +8,7 @@ const catalog = ref([]);
 
 onMounted(async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/items');
+    const res = await axios.get(`${import.meta.env.VITE_URL}/api/items`);
     const data = res.data;
 
     // fill the catalog with the data received from the backend
