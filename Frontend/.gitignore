@@ -7,8 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+package-lock.json
+
 node_modules
+vite.config.js
+eslint.config.js
+jsconfig.json
 .DS_Store
+.env
+.editorconfig
+
 TODO-LIST.txt
 dist
 dist-ssr

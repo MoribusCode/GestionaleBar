@@ -1,9 +1,12 @@
 <script setup>
+import Workstation from '@/components/Workstation.vue';
+
+const category = "spina";
+
 </script>
 
 <template>
   <div>
-    <h2>Pagina Birre</h2>
-    <p>Contenuto Birre qui...</p>
+    <Workstation :category="category" />
   </div>
 </template>

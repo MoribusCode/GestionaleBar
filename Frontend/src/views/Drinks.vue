@@ -1,9 +1,12 @@
 <script setup>
+import Workstation from '@/components/Workstation.vue';
+
+const category = "drink";
+
 </script>
 
 <template>
   <div>
-    <h2>Pagina Drinks</h2>
-    <p>Contenuto Drinks qui...</p>
+    <Workstation :category="category" />
   </div>
 </template>

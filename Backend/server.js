@@ -17,7 +17,11 @@ fastify.register (api, {prefix: "/api"});
 // Avvio manuale del server HTTP per poterlo usare con socket.io
 const start = async () => {
   try {
-    await fastify.listen({ port: process.env.PORT || 3000, host: "0.0.0.0" });
+    await fastify.listen({ 
+      port: process.env.PORT || 3000, 
+      host: process.env.HOST || "0.0.0.0" 
+    });
+
     const address = fastify.server.address();
     console.log(`Server running at ${address.address}:${address.port}`);
 

@@ -13,34 +13,37 @@ db.serialize(() => {
 
   //tabella articoli (items)
   db.run(`
-      CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        price REAL NOT NULL,
-        category TEXT
-      )
+    CREATE TABLE IF NOT EXISTS items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      price REAL NOT NULL,
+      category TEXT
+    )
   `);
 
-  //tabella ordini (orders)
+  // Tabella ordini (orders), per ora la togliamo
+
   db.run(`
-  CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    status TEXT DEFAULT 'pending'
-  )
+    CREATE TABLE IF NOT EXISTS orders (
+      order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      status TEXT DEFAULT 'pending',
+      total_price DECIMAL(10,2),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
   `);
 
-  //tabella dettaglio ordini(orders-items)
+  // Tabella dettaglio ordini(orders-items)
   db.run(`
-  CREATE TABLE IF NOT EXISTS order_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id INTEGER,
-    item_name TEXT,
-    quantity INTEGER,
-    FOREIGN KEY(order_id) REFERENCES orders(id)
-  )
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      item_name TEXT,
+      quantity INTEGER,
+      FOREIGN KEY (order_id) REFERENCES orders(id)
+    )
   `);
-    
-  db.get ('SELECT * FROM order_items', (err, row) => {
+
+  db.get('SELECT * FROM order_items', (err, row) => {
     if (err) {
       console.error('Errore nella lettura della tabella order-items: ', err.message);
       return;
@@ -58,17 +61,17 @@ db.serialize(() => {
 
       const insert = db.prepare('INSERT INTO items (name, price, category) VALUES (?, ?, ?)');
 
-      insert.run('TEST', 100.00, 'Bevande');
-      insert.run('Aperol', 3.00, 'Bevande');
+      insert.run('Birra', 5.00, 'Spina');
+      insert.run('Aperol', 3.00, 'Drink');
       insert.run('Cicchetti', 4.00, 'Cibo');
-      insert.run('Gin Tonic', 7.00, 'Bevande');
+      insert.run('Gin Tonic', 7.00, 'Drink');
 
       insert.finalize(() => {
         console.log("Articoli iniziali inseriti nel DB.");
       });
 
     } else {
-      
+
       console.log("Articoli già presenti nel DB.");
     }
   });
