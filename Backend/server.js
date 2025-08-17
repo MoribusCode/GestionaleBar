@@ -9,6 +9,7 @@ const { Server } = require("socket.io");  // socket.io server class
 // Enable CORS (so the frontend can communicate with the backend)
 fastify.register (cors, {
   origin: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 });
 
 // Register the API routes
@@ -29,7 +30,7 @@ const start = async () => {
     const io = new Server(fastify.server, {
       cors: {
         origin: "*",
-        methods: ["GET", "POST"],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       }
     });
 

@@ -39,6 +39,7 @@ db.serialize(() => {
       order_id INTEGER,
       item_name TEXT,
       quantity INTEGER,
+      status DEFAULT 'pending',
       FOREIGN KEY (order_id) REFERENCES orders(id)
     )
   `);
