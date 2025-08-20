@@ -1,5 +1,3 @@
-const { stat } = require("fs");
-
 module.exports = function (fastify, opts, done) {
 
     const db = require("./Database/database");

@@ -11,7 +11,7 @@ const db = new sqlite3.Database(dbPath);
 // Crea le tabelle se non esistono
 db.serialize(() => {
 
-  //tabella articoli (items)
+  // Tabella articoli (items)
   db.run(`
     CREATE TABLE IF NOT EXISTS items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +40,17 @@ db.serialize(() => {
       item_name TEXT,
       quantity INTEGER,
       FOREIGN KEY (order_id) REFERENCES orders(id)
+    )
+  `);
+
+  // Tabella utenti (users)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'user',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 

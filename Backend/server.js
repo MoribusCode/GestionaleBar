@@ -1,4 +1,3 @@
-const api = require("./router");
 
 require("dotenv").config();
 
@@ -11,8 +10,17 @@ fastify.register (cors, {
   origin: true,
 });
 
+// Register cookie plugin 
+fastify.register(require("@fastify/cookie"));
+
+// Register JWT plugin
+fastify.register(require("./plugins/jwt"));
+
+// Register auth routes 
+fastify.register (require ("./routes/auth"), {prefix: "/auth"});
+
 // Register the API routes
-fastify.register (api, {prefix: "/api"});
+fastify.register (require ("./router"), {prefix: "/api"});
 
 // Avvio manuale del server HTTP per poterlo usare con socket.io
 const start = async () => {
