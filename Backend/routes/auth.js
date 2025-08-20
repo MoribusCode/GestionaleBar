@@ -1,5 +1,7 @@
 const fp = require('fastify-plugin');
 const bcrypt = require('bcrypt');
+const cookie = require('../plugins/cookie');
+
 const { dbRun, dbGet } = require('../Database/database');
 
 module.exports = fp(async (fastify, opts) => {
@@ -14,25 +16,27 @@ module.exports = fp(async (fastify, opts) => {
 
         try {
             const user = await getUser(username);
-
-            if (!user) {
-                return reply.status(401).send({ message: "Invalid credentials" });
-            }
-
             const match = await bcrypt.compare(password, user.password);
 
-            if (match) {
-                const token = fastify.jwt.sign({
-                    username: user.username,
-                    role: user.role
-                }, {
-                    expiresIn: '8h'
-                });
-
-                return reply.send({ token });
-            } else {
+            if (!user || !match) {
                 return reply.status(401).send({ message: "Invalid credentials" });
             }
+
+            const token = fastify.jwt.sign({
+                username: user.username,
+                role: user.role
+            });
+
+            reply.setCookie('token', token);
+
+            return reply.send({
+                message: "Login successful",
+                user: {
+                    username: user.username,
+                    role: user.role
+                }
+            });
+
         } catch (err) {
             return reply.status(500).send({ message: "Internal server error" });
         }
@@ -57,9 +61,9 @@ module.exports = fp(async (fastify, opts) => {
             const hashed = await bcrypt.hash(password, saltRounds);
 
             await dbRun(`
-            INSERT INTO users (username, password, role)
-            VALUES (?, ?, ?)`, 
-            [username, hashed, role]
+                INSERT INTO users (username, password, role)
+                VALUES (?, ?, ?)`,
+                [username, hashed, role]
             );
 
         } catch (err) {
@@ -69,8 +73,13 @@ module.exports = fp(async (fastify, opts) => {
 
 
     async function getUser(username) {
-        return dbGet("SELECT * FROM users WHERE username = ?",
-            [username]
-        );
+        try {
+            return dbGet("SELECT * FROM users WHERE username = ?",
+                [username]
+            );
+        } catch (err) {
+            console.error("Error fetching user:", err.message);
+            throw err;
+        }
     }
 });

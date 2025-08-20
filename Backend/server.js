@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const fastify = require("fastify") ({ logger: true });
@@ -8,6 +7,7 @@ const { Server } = require("socket.io");  // socket.io server class
 // Enable CORS (so the frontend can communicate with the backend)
 fastify.register (cors, {
   origin: true,
+  credentials: true // Allow cookies to be sent with requests
 });
 
 // Register cookie plugin 
