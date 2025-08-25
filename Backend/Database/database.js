@@ -54,11 +54,12 @@ db.serialize(() => {
     )
   `);
 
-  db.get('SELECT * FROM order_items', (err, row) => {
+  db.all(`SELECT * FROM users`, [], (err, rows) => {
     if (err) {
-      console.error('Errore nella lettura della tabella order-items: ', err.message);
+      console.error('Errore nella lettura della tabella users: ', err.message);
       return;
     }
+    console.log("Utenti trovati:", rows);
   });
 
   //sta roba è provvisoria per aggiungere gli articoli di prova a 'items' intanto che è vuota, intanto ignora
@@ -71,7 +72,7 @@ db.serialize(() => {
     if (row.count === 0) {
 
       const insert = db.prepare('INSERT INTO items (name, price, category) VALUES (?, ?, ?)');
-
+  
       insert.run('Birra', 5.00, 'Spina');
       insert.run('Aperol', 3.00, 'Drink');
       insert.run('Cicchetti', 4.00, 'Cibo');
@@ -82,7 +83,6 @@ db.serialize(() => {
       });
 
     } else {
-
       console.log("Articoli già presenti nel DB.");
     }
   });

@@ -1,10 +1,47 @@
-const fp = require('fastify-plugin');
+const db = require('../Database/database');
 const bcrypt = require('bcrypt');
-const cookie = require('../plugins/cookie');
+const util = require('util');
 
-const { dbRun, dbGet } = require('../Database/database');
+const dbRun = util.promisify(db.run).bind(db);
+const dbGet = util.promisify(db.get).bind(db);
 
-module.exports = fp(async (fastify, opts) => {
+// Add this function to create admin user
+async function createAdminUser() {
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminRole = 'admin';
+    
+    try {
+        // Check if admin already exists
+        const existingAdmin = await dbGet("SELECT * FROM users WHERE username = ?", 
+            [adminUsername]
+        );
+
+        if (existingAdmin) {
+            console.log('Admin user already exists');
+            return;
+        }
+
+        // Hash the admin password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(adminPassword, saltRounds);
+
+        // Insert admin user
+        await dbRun(`
+            INSERT INTO users (username, password, role)
+            VALUES (?, ?, ?)`,
+            [adminUsername, hashedPassword, adminRole]
+        );
+        
+        console.log('Admin user created successfully');
+    } catch (err) {
+        console.error('Error creating admin user:', err.message);
+    }
+}
+
+module.exports = function (fastify, opts, done) {
+    // Create the admin user when the server starts
+    createAdminUser();
 
     // Login endpoint
     fastify.post('/login', async (request, reply) => {
@@ -12,17 +49,18 @@ module.exports = fp(async (fastify, opts) => {
 
         if (!username || !password) {
             return reply.status(400).send({ message: "Username and password are required" });
-        }
+        } 
 
         try {
             const user = await getUser(username);
+
             const match = await bcrypt.compare(password, user.password);
 
             if (!user || !match) {
                 return reply.status(401).send({ message: "Invalid credentials" });
             }
 
-            const token = fastify.jwt.sign({
+            const token = await fastify.jwt.sign({
                 username: user.username,
                 role: user.role
             });
@@ -38,10 +76,12 @@ module.exports = fp(async (fastify, opts) => {
             });
 
         } catch (err) {
+            console.error("Login error:", err.message);
             return reply.status(500).send({ message: "Internal server error" });
         }
     });
 
+    // Register endpoint
     fastify.post('/register', async (request, reply) => {
         const { username, password, role } = request.body;
 
@@ -71,15 +111,52 @@ module.exports = fp(async (fastify, opts) => {
         }
     });
 
+    // Check endpoint
+    fastify.get('/check', async (request, reply) => {
+        try {
+            if (request.user) {
+                return reply.send({
+                    authenticated: true,
+                    user: request.user
+                });
+            }
+
+        } catch (err) {
+            console.error("Check error:", err.message);
+            return reply.status(401).send({ authenticated: false });
+        }
+    });
 
     async function getUser(username) {
         try {
-            return dbGet("SELECT * FROM users WHERE username = ?",
-                [username]
-            );
+            const user = await dbGet("SELECT * FROM users WHERE username = ?", [username]);
+
+            if (!user) {
+                console.log("No user found with username:", username);
+                return null;
+            }
+            return user;
+
         } catch (err) {
-            console.error("Error fetching user:", err.message);
+            console.error("Database error in getUser:", err);
             throw err;
         }
     }
-});
+
+    // Logout endpoint
+    fastify.post('/logout', async (request, reply) => {
+        try {
+            await request.jwtVerify();
+
+            // clear the session cookie
+            reply.clearCookie('token');
+            
+            return reply.send({ message: "Logout successful" });
+        } catch (err) {
+            console.error("Logout error:", err.message);
+            return reply.status(500).send({ message: "Internal server error" });
+        }
+    });
+
+    done();
+};

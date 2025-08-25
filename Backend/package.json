@@ -3,6 +3,8 @@
     "@fastify/cors": "^11.0.0",
     "@fastify/jwt": "^10.0.0",
     "@fastify/cookie": "^11.0.2",
+    "socket.io": "^4.8.1",
+    "sqlite3": "^5.1.7",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "fastify": "^5.2.1",

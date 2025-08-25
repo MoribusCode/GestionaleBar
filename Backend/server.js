@@ -11,16 +11,16 @@ fastify.register (cors, {
 });
 
 // Register cookie plugin 
-fastify.register(require("@fastify/cookie"));
+fastify.register(require("./plugins/cookie"));
 
 // Register JWT plugin
 fastify.register(require("./plugins/jwt"));
 
 // Register auth routes 
-fastify.register (require ("./routes/auth"), {prefix: "/auth"});
+fastify.register(require ("./routes/auth"), {prefix: "/auth"});
 
 // Register the API routes
-fastify.register (require ("./router"), {prefix: "/api"});
+fastify.register(require ("./router"), {prefix: "/api"});
 
 // Avvio manuale del server HTTP per poterlo usare con socket.io
 const start = async () => {

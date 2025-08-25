@@ -11,7 +11,7 @@ const props = defineProps({
 
 const orders = ref([]);
  
-const socket = io(`${import.meta.env.VITE_URL}`);
+const socket = io(`${import.meta.env.VITE_API_URL}`);
 
 function filterItemsByCategory(orderItems, category) {
   return orderItems.filter(item => item.category.toLowerCase() === category.toLowerCase());
