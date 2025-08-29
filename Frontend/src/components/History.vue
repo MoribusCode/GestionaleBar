@@ -1,6 +1,8 @@
 <script setup>
 import axios from 'axios';
 import { onMounted, ref } from 'vue';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 let orders = ref([]);
 const shown = ref(null);
@@ -24,13 +26,36 @@ function toggleOrder(id) {
     shown.value = shown.value === id ? null : id;
 }
 
+function exportToExcel() {
+    const mappedOrders = orders.value.map(order => ({
+        ID: order.id,
+        Totale: order.totalPrice + "€",
+        Articoli: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
+        Stato: order.status
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(mappedOrders);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+
+    // buffer to convert workbook into binary
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    // downloadable file from browser (blob)
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+
+    // download the file
+    saveAs(data, `orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 </script>
 
 <template>
     <div>
         <h1>Storico ordini</h1>
     </div>
-
+    <div>
+        <button @click="exportToExcel">Esporta in Excel</button>
+    </div>
     <div>
         <div>
             <ul>

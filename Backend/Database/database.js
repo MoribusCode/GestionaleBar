@@ -39,6 +39,7 @@ db.serialize(() => {
       order_id INTEGER,
       item_name TEXT,
       quantity INTEGER,
+      status TEXT DEFAULT 'pending',
       FOREIGN KEY (order_id) REFERENCES orders(id)
     )
   `);
@@ -53,14 +54,6 @@ db.serialize(() => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
-  db.all(`SELECT * FROM users`, [], (err, rows) => {
-    if (err) {
-      console.error('Errore nella lettura della tabella users: ', err.message);
-      return;
-    }
-    console.log("Utenti trovati:", rows);
-  });
 
   //sta roba è provvisoria per aggiungere gli articoli di prova a 'items' intanto che è vuota, intanto ignora
   db.get('SELECT COUNT(*) AS count FROM items', (err, row) => {

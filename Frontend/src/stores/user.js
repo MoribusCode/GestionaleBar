@@ -1,8 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 
+
 export const useUserStore = defineStore('user', () => {
+  const router = useRouter();
+
   // --- state ---
   const user = ref(null)
   const loading = ref(false)
@@ -48,12 +52,32 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  async function logout() {
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {}, {
+        withCredentials: true
+      })
+
+      if (response.status === 200) {
+        $reset();
+
+        // redirect to login page
+        router.push('/login');
+      }
+
+    } catch (err) {
+      error.value = err.response.data.message || "Logout failed"
+    }
+  }
+
   function setUser(newUser) {
     user.value = newUser
   }
 
-  function clearUser() {
-    user.value = null
+  function $reset() {
+    user.value = null;
+    loading.value = false;
+    error.value = null;
   }
 
   return {
@@ -65,12 +89,9 @@ export const useUserStore = defineStore('user', () => {
     isAuthenticated,
     // actions
     login,
+    logout,
     setUser,
-    clearUser,
-    checkAuth
+    checkAuth,
+    $reset
   }
-},
-  {
-    persist: true
-  }
-)
+});

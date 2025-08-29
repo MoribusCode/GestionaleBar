@@ -1,5 +1,6 @@
 const db = require('../Database/database');
 const bcrypt = require('bcrypt');
+const { timeStamp } = require('console');
 const util = require('util');
 
 const dbRun = util.promisify(db.run).bind(db);
@@ -65,7 +66,12 @@ module.exports = function (fastify, opts, done) {
                 role: user.role
             });
 
-            reply.setCookie('token', token);
+            reply.setCookie('token', token, {
+                path: '/',
+                httpOnly: true,
+                secure: false,
+                sameSite: 'Strict'
+            });
 
             return reply.send({
                 message: "Login successful",
@@ -114,6 +120,7 @@ module.exports = function (fastify, opts, done) {
     // Check endpoint
     fastify.get('/check', async (request, reply) => {
         try {
+            
             if (request.user) {
                 return reply.send({
                     authenticated: true,
@@ -146,12 +153,19 @@ module.exports = function (fastify, opts, done) {
     // Logout endpoint
     fastify.post('/logout', async (request, reply) => {
         try {
-            await request.jwtVerify();
-
             // clear the session cookie
-            reply.clearCookie('token');
+            reply.clearCookie('token', {
+                path: '/',
+                httpOnly: true,
+                sameSite: 'Strict',
+                secure: false
+            });
             
-            return reply.send({ message: "Logout successful" });
+            return reply.status(200).send({
+                message: "Logout successful",
+                timeStamp: new Date().getTime()
+            });
+
         } catch (err) {
             console.error("Logout error:", err.message);
             return reply.status(500).send({ message: "Internal server error" });

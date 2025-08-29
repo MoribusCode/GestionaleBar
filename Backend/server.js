@@ -7,6 +7,7 @@ const { Server } = require("socket.io");  // socket.io server class
 // Enable CORS (so the frontend can communicate with the backend)
 fastify.register (cors, {
   origin: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true // Allow cookies to be sent with requests
 });
 
@@ -36,8 +37,10 @@ const start = async () => {
     // Attacco socket.io al server HTTP interno di Fastify
     const io = new Server(fastify.server, {
       cors: {
-        origin: "*",
-        methods: ["GET", "POST"],
+        origin: process.env.FRONTEND_URL,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        credentials: true, // Allow cookies to be sent with requests
+        transports: ['websocket', 'polling']
       }
     });
 

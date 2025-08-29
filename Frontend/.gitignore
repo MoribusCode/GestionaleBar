@@ -9,7 +9,7 @@ lerna-debug.log*
 
 package-lock.json
 
-node_modules
+node_modules/
 vite.config.js
 eslint.config.js
 jsconfig.json
@@ -18,8 +18,8 @@ jsconfig.json
 .editorconfig
 
 TODO-LIST.txt
-dist
-dist-ssr
+dist/
+dist-ssr/
 coverage
 *.local
 

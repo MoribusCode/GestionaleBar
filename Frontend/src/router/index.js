@@ -54,10 +54,10 @@ router.beforeEach(async (to, from, next) => {
   // if the route requires auth and user isn't authenticated, redirect to login
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next({ name: 'login' });
-  } 
+  }
   // if user is authenticated and tries to access login page, redirect to home
   else if (to.name === 'login' && userStore.isAuthenticated) {
-    next({ name: 'home' });
+    nexFt({ name: 'home' });
   }
   else {
     next();
