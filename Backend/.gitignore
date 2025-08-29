@@ -78,7 +78,8 @@ web_modules/
 .yarn-integrity
 
 package-lock.json
-node_modules
+node_modules/
+Database/bar.db
 
 # dotenv environment variable files
 .env

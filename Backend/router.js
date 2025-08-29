@@ -1,5 +1,3 @@
-const { stat } = require("fs");
-
 module.exports = function (fastify, opts, done) {
 
     const db = require("./Database/database");
@@ -9,6 +7,7 @@ module.exports = function (fastify, opts, done) {
     // Promisify DB methods
     const dbAll = util.promisify(db.all).bind(db);
     const dbRun = util.promisify(db.run).bind(db);
+    const dbGet = util.promisify(db.get).bind(db);
 
     // GET all orders
     fastify.get("/orders", async (request, reply) => {
@@ -38,10 +37,49 @@ module.exports = function (fastify, opts, done) {
         return orders;
 
         } catch (err) {
-
             return reply.status(500).send({ message: err.message });
         }
     });
+
+// GET all pending orders (solo quelli non ancora completati)
+    fastify.get("/orders/pending", async (request, reply) => {
+  try {
+    const rows = await dbAll(`
+      SELECT 
+        o.order_id, 
+        o.status,
+        oi.item_name, 
+        oi.quantity, 
+        i.category
+      FROM orders o
+      LEFT JOIN order_items oi ON o.order_id = oi.order_id
+      LEFT JOIN items i ON oi.item_name = i.name
+      WHERE oi.status = 'pending'
+    `);
+
+    // Raggruppiamo per ordine
+    const grouped = rows.reduce((acc, row) => {
+      if (!acc[row.order_id]) {
+        acc[row.order_id] = {
+          id: row.order_id,
+          status: row.status,
+          items: []
+        };
+      }
+      acc[row.order_id].items.push({
+        name: row.item_name,
+        quantity: row.quantity,
+        category: row.category
+      });
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
+    } catch (err) {
+        return reply.status(500).send({ message: err.message });
+    }
+    });
+
 
     // GET all items (retrieve catalog)
     fastify.get("/items", async (request, reply) => {
@@ -65,8 +103,6 @@ module.exports = function (fastify, opts, done) {
         try {
             const totalPrice = request.body.totalPrice || 0;
             await dbRun('INSERT INTO orders (total_price) VALUES (?)', totalPrice);
-
-            const dbGet = util.promisify(db.get).bind(db);
 
             const row = await dbGet("SELECT MAX(order_id) AS order_id FROM orders");
             const orderId = row.order_id; 
@@ -103,31 +139,68 @@ module.exports = function (fastify, opts, done) {
     });
 
     // PUT (Mark order as completed)
-    fastify.put("/orders/:id", async (request, reply) => {
-
-        const { id } = request.params;
+    fastify.put("/orders/:orderId/category/:category/close", async (request, reply) => {
+    const { orderId, category } = request.params;;
         
         try {
-            const result = await dbRun(`UPDATE orders SET status = 'completed' WHERE id = ?`, [id]);
-            if (result.changes === 0) {
-                return reply.status(404).send({ message: "Order not found" });
-            }
+        console.log("ordine:",orderId,",",category)
+        // Controllo quante righe "pending" ci sono nell'ordine
+        const pendingRows = await dbAll(
+        "SELECT * FROM order_items WHERE order_id = ? AND status = 'pending'",
+        [orderId]
+        );
 
-            return { id, status: "completed" };
-
-        } catch (err) {
-            return reply.status(500).send({ message: err.message });
+ if (pendingRows.length === 0) {
+        return reply.status(400).send({ message: "Non ci sono righe pending da chiudere" });
         }
-    });
+        console.log(orderId, category)
+        const categoryRows = await dbAll(
+            `SELECT * 
+            FROM order_items oi
+            LEFT JOIN items i ON oi.item_name = i.name
+            WHERE oi.order_id = ?
+            AND oi.status = 'pending'
+            AND lower(i.category) = lower(?)`,
+            [orderId, category]
+        );
 
-    async function getID() {
-        const dbGet = util.promisify(db.get).bind(db);
+        console.log(categoryRows.length,",",pendingRows.length)
+        if (categoryRows.length === pendingRows.length) {
+            console.log("ultima parte fatta, chiudo totalmente l'ordine")
+            await dbRun(
+                "UPDATE order_items SET status = 'closed' WHERE order_id = ?",
+                [orderId]
+            );
+            await dbRun(
+                "UPDATE orders SET status = 'closed' WHERE order_id = ?",
+                [orderId]
+            );
+            return { orderId, status: "closed" };
+        } else {
+            console.log("riga completata, ordine in stato parziale")
+            await dbRun(
+            `UPDATE order_items
+            SET status = 'partial'
+            WHERE order_id = ? 
+                AND item_name IN (SELECT name FROM items WHERE lower(category) = lower(?))`,
+            [orderId, category]
+            );
 
-        const rows = await dbGet('SELECT MAX(order_id) AS maxId FROM order_items');
-    
-        // Return max ID + 1 or 1 if no orders exist
-        return rows.maxId ? rows.maxId + 1 : 1;
+            // Aggiorna status ordine se non era già parziale
+            const order = await dbGet("SELECT status FROM orders WHERE order_id = ?", [orderId]);
+            if (order.status !== "partial") {
+                await dbRun(
+                "UPDATE orders SET status = 'partial' WHERE order_id = ?",
+                [orderId]
+                );
+            }
+            return { orderId, status: "partial", category };
+        }
+         } catch (err) {
+        console.error("Errore chiusura ordine:", err.message);
+        return reply.status(500).send({ message: err.message });
     }
+    });
 
     done();
 }

@@ -1,5 +1,11 @@
 <script setup>
+import { useUserStore } from '@/stores/user';
 
+const userStore = useUserStore();
+
+async function handleLogout() {
+    await userStore.logout();
+}
 </script>
 
 <template>
@@ -22,14 +28,17 @@
         <div>
             <router-link to="/birre">
                 <h1>Birre</h1>
-        </router-link>
+            </router-link>
         </div>
         <div>
             <router-link to="/drinks">
-            <h1>Drinks</h1>
-        </router-link>
+                <h1>Drinks</h1>
+            </router-link>
         </div>
-    </div> 
+    </div>
+
+    <button @click="handleLogout">Logout</button>
+
 </template>
 
 <style scoped>

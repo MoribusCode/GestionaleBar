@@ -1,5 +1,3 @@
-const api = require("./router");
-
 require("dotenv").config();
 
 const fastify = require("fastify") ({ logger: true });
@@ -9,10 +7,21 @@ const { Server } = require("socket.io");  // socket.io server class
 // Enable CORS (so the frontend can communicate with the backend)
 fastify.register (cors, {
   origin: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true // Allow cookies to be sent with requests
 });
 
+// Register cookie plugin 
+fastify.register(require("./plugins/cookie"));
+
+// Register JWT plugin
+fastify.register(require("./plugins/jwt"));
+
+// Register auth routes 
+fastify.register(require ("./routes/auth"), {prefix: "/auth"});
+
 // Register the API routes
-fastify.register (api, {prefix: "/api"});
+fastify.register(require ("./router"), {prefix: "/api"});
 
 // Avvio manuale del server HTTP per poterlo usare con socket.io
 const start = async () => {
@@ -28,8 +37,10 @@ const start = async () => {
     // Attacco socket.io al server HTTP interno di Fastify
     const io = new Server(fastify.server, {
       cors: {
-        origin: "*",
-        methods: ["GET", "POST"],
+        origin: process.env.FRONTEND_URL,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        credentials: true, // Allow cookies to be sent with requests
+        transports: ['websocket', 'polling']
       }
     });
 

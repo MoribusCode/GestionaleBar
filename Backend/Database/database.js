@@ -11,7 +11,7 @@ const db = new sqlite3.Database(dbPath);
 // Crea le tabelle se non esistono
 db.serialize(() => {
 
-  //tabella articoli (items)
+  // Tabella articoli (items)
   db.run(`
     CREATE TABLE IF NOT EXISTS items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,16 +39,21 @@ db.serialize(() => {
       order_id INTEGER,
       item_name TEXT,
       quantity INTEGER,
+      status TEXT DEFAULT 'pending',
       FOREIGN KEY (order_id) REFERENCES orders(id)
     )
   `);
 
-  db.get('SELECT * FROM order_items', (err, row) => {
-    if (err) {
-      console.error('Errore nella lettura della tabella order-items: ', err.message);
-      return;
-    }
-  });
+  // Tabella utenti (users)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'user',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
   //sta roba è provvisoria per aggiungere gli articoli di prova a 'items' intanto che è vuota, intanto ignora
   db.get('SELECT COUNT(*) AS count FROM items', (err, row) => {
@@ -60,7 +65,7 @@ db.serialize(() => {
     if (row.count === 0) {
 
       const insert = db.prepare('INSERT INTO items (name, price, category) VALUES (?, ?, ?)');
-
+  
       insert.run('Birra', 5.00, 'Spina');
       insert.run('Aperol', 3.00, 'Drink');
       insert.run('Cicchetti', 4.00, 'Cibo');
@@ -71,7 +76,6 @@ db.serialize(() => {
       });
 
     } else {
-
       console.log("Articoli già presenti nel DB.");
     }
   });
