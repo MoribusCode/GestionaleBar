@@ -7,15 +7,16 @@ import { addedToOrder } from '@/store.js';
 const emit = defineEmits(['orderStored'])
 
 const list = ref([]);
+const orderNote = ref('');
 
 async function storeOrder() {
     try {
         //send the order to the backend
         const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/orders`, {
             order: list.value,
-            totalPrice: totalPrice()
+            totalPrice: totalPrice(),
+            note: orderNote.value
         });
-
         console.log('Order stored successfully', response.data);
 
         //clear the order list after storing
@@ -47,6 +48,7 @@ function removeItem(index) {
 
 function clean() {
     addedToOrder.value = [];
+    orderNote.value = '';
 }
 
 watch(addedToOrder, handleItemsAdded,
@@ -68,6 +70,15 @@ watch(addedToOrder, handleItemsAdded,
                 </div>    
             </li>
         </ul>
+
+        <div>
+            <textarea
+                id="order-note"
+                v-model="orderNote"
+                placeholder="Nota Ordine">
+            </textarea>
+        </div>
+
         <div>
             <h2>Totale: {{ totalPrice().toFixed(2) }} </h2>
         </div>

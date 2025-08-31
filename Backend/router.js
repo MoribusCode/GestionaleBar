@@ -48,6 +48,7 @@ module.exports = function (fastify, opts, done) {
       SELECT 
         o.order_id, 
         o.status,
+        o.note,
         oi.item_name, 
         oi.quantity, 
         i.category
@@ -63,6 +64,7 @@ module.exports = function (fastify, opts, done) {
         acc[row.order_id] = {
           id: row.order_id,
           status: row.status,
+          note: row.note || '',
           items: []
         };
       }
@@ -102,7 +104,8 @@ module.exports = function (fastify, opts, done) {
 
         try {
             const totalPrice = request.body.totalPrice || 0;
-            await dbRun('INSERT INTO orders (total_price) VALUES (?)', totalPrice);
+            const note = request.body.note || '';
+            await dbRun('INSERT INTO orders (total_price,note) VALUES (?,?)', [totalPrice,note]);
 
             const row = await dbGet("SELECT MAX(order_id) AS order_id FROM orders");
             const orderId = row.order_id; 
@@ -121,7 +124,8 @@ module.exports = function (fastify, opts, done) {
             // Alla fine di TUTTO, emetto evento websocket con ordine
             const orderData = {
             id: orderId,
-            items: request.body.order
+            items: request.body.order,
+            note
             };
             fastify.io.emit('new-order', orderData);  // fastify.io è il websocket server (socket.io)
 
@@ -129,7 +133,8 @@ module.exports = function (fastify, opts, done) {
             return reply.status(201).send({ 
                 id: orderId, 
                 status: "pending", 
-                items: request.body.order
+                items: request.body.order,
+                note
             });
 
         } catch (err) {

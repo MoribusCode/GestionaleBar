@@ -28,7 +28,8 @@ async function fetchPendingOrders() {
       if (filtered.length > 0) {
         orders.value.push({
           id: order.id,
-          items: filtered
+          items: filtered,
+          note: order.note
         });
       }
     });
@@ -63,7 +64,8 @@ onMounted(() => {
     if (filteredItems.length > 0) {
       orders.value.push({
         id: orderData.id,
-        items: filteredItems
+        items: filteredItems,
+        note: orderData.note
       });
     }
   });
@@ -76,6 +78,7 @@ onMounted(() => {
     <ul>
       <li v-for="order in orders" :key="order.id">
         <h3>Ordine #{{ order.id }}</h3>
+        <h5>{{ order.note }}</h5>
         <ul>
           <li v-for="item in order.items" :key="item.name">
             {{ item.name }} x{{ item.quantity }}
