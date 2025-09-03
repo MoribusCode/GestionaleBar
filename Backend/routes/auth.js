@@ -1,6 +1,5 @@
 const db = require('../Database/database');
 const bcrypt = require('bcrypt');
-const { timeStamp } = require('console');
 const util = require('util');
 
 const dbRun = util.promisify(db.run).bind(db);
@@ -120,7 +119,6 @@ module.exports = function (fastify, opts, done) {
     // Check endpoint
     fastify.get('/check', async (request, reply) => {
         try {
-            
             if (request.user) {
                 return reply.send({
                     authenticated: true,

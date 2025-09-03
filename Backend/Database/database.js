@@ -14,7 +14,7 @@ db.serialize(() => {
   // Tabella articoli (items)
   db.run(`
     CREATE TABLE IF NOT EXISTS items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id INTEGER PRIMARY KEY,
       name TEXT NOT NULL,
       price REAL NOT NULL,
       category TEXT
@@ -25,7 +25,7 @@ db.serialize(() => {
 
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
-      order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER PRIMARY KEY,
       status TEXT DEFAULT 'pending',
       total_price DECIMAL(10,2),
       note TEXT,
@@ -36,7 +36,7 @@ db.serialize(() => {
   // Tabella dettaglio ordini(orders-items)
   db.run(`
     CREATE TABLE IF NOT EXISTS order_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id INTEGER PRIMARY KEY,
       order_id INTEGER,
       item_name TEXT,
       quantity INTEGER,
@@ -48,7 +48,7 @@ db.serialize(() => {
   // Tabella utenti (users)
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id INTEGER PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
       role TEXT DEFAULT 'user',

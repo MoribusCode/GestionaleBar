@@ -17,7 +17,8 @@ fastify.register(require("./plugins/cookie"));
 // Register JWT plugin
 fastify.register(require("./plugins/jwt"));
 
-// Register auth routes 
+// Register routes 
+fastify.register(require("./routes/admin"), {prefix: "/admin"});
 fastify.register(require ("./routes/auth"), {prefix: "/auth"});
 
 // Register the API routes

@@ -31,8 +31,15 @@ function exportToExcel() {
         ID: order.id,
         Totale: order.totalPrice + "€",
         Articoli: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
-        Stato: order.status
     }));
+
+    const totalSum = orders.value.reduce((sum, order) => sum + order.totalPrice, 0);
+    mappedOrders.push({});
+    mappedOrders.push({ 
+        ID: 'TotaleGiornata', 
+        Totale: totalSum + "€", 
+        Articoli: '' 
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(mappedOrders);
     const workbook = XLSX.utils.book_new();

@@ -24,17 +24,14 @@ module.exports = fp(async (fastify, opts) => {
     });
 
     // authorization middleware - check if the user has the required role
-    fastify.decorate('authorize', async (roles = []) => {
+    fastify.decorate('authorize', (roles = []) => {
         return async (request, reply) => {
             try { 
-                const token = request.cookies.token;
-                if (!token) {
+                if (!request.user) {
                     return reply.code(401).send({ error: 'No token found' });
                 }
-                const user = await request.jwtVerify();
-                request.user = user;  // decoded JWT payload
 
-                if (roles.length > 0 && !roles.includes(user.role)) {
+                if (roles.length > 0 && !roles.includes(request.user.role)) {
                     return reply.code(403).send({ error: 'Forbidden' });
                 } 
             

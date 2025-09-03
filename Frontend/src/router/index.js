@@ -17,31 +17,60 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('@/views/AdminDashboard.vue'),
+      meta: { 
+        requiresAuth: true,
+        roles: ['admin']  
+      }
+    },
+    {
       path: '/orders',
       name: 'orders',
       component: () => import('@/views/OrdersView.vue'),
-      meta: { requiresAuth: true }
+      meta: { 
+        requiresAuth: true,
+        roles: ['cashier']
+       }
     },
     {
       path: '/history',
       name: 'history',
       component: () => import('@/views/HistoryView.vue'),
-      meta: { requiresAuth: true }
+      meta: { 
+        requiresAuth: true,
+        roles: ['admin', 'cashier', 'food', 'beer', 'drink']
+
+      }
     },
     {
       path: '/cicchetti',
       name: 'cicchetti',
-      component: () => import('@/views/Cicchetti.vue')
+      component: () => import('@/views/Cicchetti.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['food']
+      }
+
     },
     {
       path: '/birre',
       name: 'birre',
-      component: () => import('@/views/Birre.vue')
+      component: () => import('@/views/Birre.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['beer']
+      }
     },
     {
       path: '/drinks',
       name: 'drinks',
-      component: () => import('@/views/Drinks.vue')
+      component: () => import('@/views/Drinks.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['drink']
+      }
     }
   ]
 })
@@ -55,13 +84,17 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next({ name: 'login' });
   }
+
   // if user is authenticated and tries to access login page, redirect to home
   else if (to.name === 'login' && userStore.isAuthenticated) {
-    nexFt({ name: 'home' });
+    next({ name: 'home' });
   }
-  else {
-    next();
+
+  else if (to.meta.roles && !to.meta.roles.includes(userStore.user?.role)) {
+    next ({ name: 'home' });
   }
+
+  else { next(); }
 });
 
 export default router
