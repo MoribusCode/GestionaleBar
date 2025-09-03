@@ -3,10 +3,6 @@ import { useUserStore } from '@/stores/user';
 
 const userStore = useUserStore();
 
-async function handleLogout() {
-    await userStore.logout();
-}
-
 const isAdmin = () => userStore.user?.role === 'admin';
 const isCashier = () => userStore.user?.role === 'cashier';
 const isFood = () => userStore.user?.role === 'food';
@@ -72,10 +68,6 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
         <span class="card-description">Gestione drinks</span>
       </router-link>
     </div>
-
-    <button class="logout-btn" @click="handleLogout">
-      Logout
-    </button>
   </div>
 </template>
 
