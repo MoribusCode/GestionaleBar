@@ -28,6 +28,7 @@ db.serialize(() => {
       order_id INTEGER PRIMARY KEY,
       status TEXT DEFAULT 'pending',
       total_price DECIMAL(10,2),
+      note TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);

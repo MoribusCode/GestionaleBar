@@ -48,6 +48,7 @@ module.exports = function (fastify, opts, done) {
       SELECT 
         o.order_id, 
         o.status,
+        o.note,
         oi.item_name, 
         oi.quantity, 
         i.category
@@ -56,28 +57,29 @@ module.exports = function (fastify, opts, done) {
       LEFT JOIN items i ON oi.item_name = i.name
       WHERE oi.status = 'pending'
     `);
-
-            // Raggruppiamo per ordine
-            const grouped = rows.reduce((acc, row) => {
-                if (!acc[row.order_id]) {
-                    acc[row.order_id] = {
-                        id: row.order_id,
-                        status: row.status,
-                        items: []
-                    };
-                }
-                acc[row.order_id].items.push({
-                    name: row.item_name,
-                    quantity: row.quantity,
-                    category: row.category
-                });
-                return acc;
-            }, {});
-
-            return Object.values(grouped);
-        } catch (err) {
-            return reply.status(500).send({ message: err.message });
+          
+    // Raggruppiamo per ordine
+    const grouped = rows.reduce((acc, row) => {
+          if (!acc[row.order_id]) {
+            acc[row.order_id] = {
+            id: row.order_id,
+            status: row.status,
+            note: row.note || '',
+            items: []
+          };
         }
+        acc[row.order_id].items.push({
+          name: row.item_name,
+          quantity: row.quantity,
+          category: row.category
+        });
+        return acc;
+      }, {});
+
+      return Object.values(grouped);
+      } catch (err) {
+        return reply.status(500).send({ message: err.message });
+      }
     });
 
 
@@ -102,7 +104,8 @@ module.exports = function (fastify, opts, done) {
 
         try {
             const totalPrice = request.body.totalPrice || 0;
-            await dbRun('INSERT INTO orders (total_price) VALUES (?)', totalPrice);
+            const note = request.body.note || '';
+            await dbRun('INSERT INTO orders (total_price,note) VALUES (?,?)', [totalPrice,note]);
 
             const row = await dbGet("SELECT MAX(order_id) AS order_id FROM orders");
             const orderId = row.order_id;
@@ -120,16 +123,18 @@ module.exports = function (fastify, opts, done) {
 
             // Alla fine di TUTTO, emetto evento websocket con ordine
             const orderData = {
-                id: orderId,
-                items: request.body.order
+              id: orderId,
+              items: request.body.order,
+              note
             };
+            
             fastify.io.emit('new-order', orderData);  // fastify.io è il websocket server (socket.io)
 
-
-            return reply.status(201).send({
-                id: orderId,
-                status: "pending",
-                items: request.body.order
+            return reply.status(201).send({ 
+                id: orderId, 
+                status: "pending", 
+                items: request.body.order,
+                note
             });
 
         } catch (err) {
