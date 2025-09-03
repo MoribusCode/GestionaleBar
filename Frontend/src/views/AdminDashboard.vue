@@ -114,6 +114,10 @@ async function handleItems(n, p, c) {
                 </div>
             </div>
         </div>
+
+        <router-link to="/" class="home-link">
+            <h3>Home</h3>
+        </router-link>
     </div>
 
     <!-- Users List Modal -->
@@ -390,6 +394,19 @@ th {
 
 tr:hover {
     background-color: #f5f5f5;
+}
+
+.home-link {
+  display: block;
+  text-align: center;
+  margin-top: 2rem;
+  color: #0d6efd;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.home-link:hover {
+  color: #0a58ca;
 }
 
 /* SVG styles */
