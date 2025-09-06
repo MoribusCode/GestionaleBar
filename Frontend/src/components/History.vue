@@ -53,6 +53,30 @@ function exportToExcel() {
     // download the file
     saveAs(data, `orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
+async function closeDay() {
+
+    const confirmed = window.confirm(
+        "Vuoi chiudere la giornata?\nTUTTI gli ordini di oggi saranno esportati in Excel e poi cancellati."
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        exportToExcel();
+
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/orders/close-day`);
+
+        orders.value = [];
+        shown.value = null;
+
+        console.log("Giornata chiusa con successo!");
+
+    } catch (e) {
+        console.error("Errore durante la chiusura della giornata:", e);
+    }
+}
 
 </script>
 
@@ -62,6 +86,9 @@ function exportToExcel() {
             <h1>Storico ordini</h1>
             <button class="export-btn" @click="exportToExcel">
                 Esporta in Excel
+            </button>
+            <button class="export-btn" @click="closeDay">
+                Chiudi giornata
             </button>
         </div>
 

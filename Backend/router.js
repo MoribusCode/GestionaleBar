@@ -207,5 +207,24 @@ module.exports = function (fastify, opts, done) {
         }
     });
 
+    // POST - Chiudi giornata (svuota ordini e order_items)
+    fastify.post("/orders/close-day", async (request, reply) => {
+        try {
+            // Prima svuoto order_items
+            await dbRun("DELETE FROM order_items");
+
+            // Poi svuoto orders
+            await dbRun("DELETE FROM orders");
+            
+            // Resetto i contatori di riga
+            await dbRun("DELETE FROM sqlite_sequence WHERE name in ('orders','order_items')");
+
+            return reply.send({ message: "Giornata chiusa con successo. Tutti gli ordini sono stati cancellati." });
+        } catch (err) {
+            console.error("Errore durante la chiusura della giornata:", err.message);
+            return reply.status(500).send({ message: err.message });
+        }
+    });
+
     done();
 }
