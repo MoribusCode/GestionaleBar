@@ -1,23 +1,40 @@
 <script setup>
-import { ref, provide } from 'vue';
-import { RouterView } from 'vue-router'
+import { ref, provide, computed } from 'vue';
+import { RouterView, useRoute } from 'vue-router'
 import Sidebar from '@/components/Sidebar.vue'
+
+const route = useRoute();
 
 const isSidebarCollapsed = ref(false);
 provide('sidebarState', isSidebarCollapsed);
+
+const showSidebar = computed(() => {
+  // Hide sidebar on login pages
+  return route.name !== 'login';
+});
 </script>
 
 <template>
     <div class="app-container">
-        <Sidebar v-model:collapsed="isSidebarCollapsed" />
-        <main :class="['main-content', { 'content-expanded': isSidebarCollapsed }]">
-            <RouterView />
+        <Sidebar
+        v-if="showSidebar"
+        v-model:collapsed="isSidebarCollapsed" 
+        />
+        <main :class="[
+          'main-content', 
+          { 
+            'content-expanded': isSidebarCollapsed,
+            'no-sidebar': !showSidebar
+          }
+        ]">
+          <RouterView />
         </main>
     </div>
 </template>
 
 <style scoped>
 .app-container {
+  display: flex;
   min-height: 100vh;
 }
 
@@ -30,6 +47,11 @@ provide('sidebarState', isSidebarCollapsed);
 }
 
 .content-expanded {
+  margin-left: 0;
+  width: 100%;
+}
+
+.no-sidebar {
   margin-left: 0;
   width: 100%;
 }

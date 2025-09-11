@@ -110,6 +110,7 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
 .menu-card h2 {
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;
+  color: white;
 }
 
 .card-description {
@@ -117,35 +118,13 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
   font-size: 0.9rem;
 }
 
-/* Card variations */
-.menu-card.admin {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.menu-card.orders {
-  background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%);
-  color: white;
-}
-
-.menu-card.history {
-  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-  color: white;
-}
-
-.menu-card.food {
-  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-  color: white;
-}
-
-.menu-card.beer {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  color: white;
-}
-
+.menu-card.admin,
+.menu-card.orders,
+.menu-card.history,
+.menu-card.food,
+.menu-card.beer,
 .menu-card.drinks {
-  background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
-  color: white;
+  background: linear-gradient(135deg, #4299e1 0%, #2b6cb0 100%);
 }
 
 .menu-card.admin .card-description,

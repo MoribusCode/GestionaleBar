@@ -9,10 +9,9 @@ const catalog = ref([]);
 onMounted(async () => {
   try {
     const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/items`);
-    const data = res.data;
 
     // fill the catalog with the data received from the backend
-    catalog.value = data;
+    catalog.value = res.data.items;
 
   } catch (error) {
     console.error('Errore nel recupero degli articoli:', error);

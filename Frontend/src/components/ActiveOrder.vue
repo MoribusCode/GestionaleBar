@@ -1,6 +1,6 @@
 <script setup>
 import axios from 'axios';
-import { ref, watch } from 'vue';
+import { ref, watch, onUnmounted} from 'vue';
 import { addedToOrder } from '@/store.js';
 
 // Emit logic to store the list order
@@ -54,6 +54,10 @@ function clean() {
 watch(addedToOrder, handleItemsAdded,
     {deep: true, immediate: true}
 );
+
+onUnmounted(() => {
+  clean();
+});
 
 </script>
 

@@ -45,49 +45,49 @@ module.exports = function (fastify, opts, done) {
     fastify.get("/orders/pending", async (request, reply) => {
         try {
             const rows = await dbAll(`
-      SELECT 
-        o.order_id, 
-        o.status,
-        o.note,
-        oi.item_name, 
-        oi.quantity, 
-        i.category
-      FROM orders o
-      LEFT JOIN order_items oi ON o.order_id = oi.order_id
-      LEFT JOIN items i ON oi.item_name = i.name
-      WHERE oi.status = 'pending'
-    `);
-          
-    // Raggruppiamo per ordine
-    const grouped = rows.reduce((acc, row) => {
-          if (!acc[row.order_id]) {
-            acc[row.order_id] = {
-            id: row.order_id,
-            status: row.status,
-            note: row.note || '',
-            items: []
-          };
-        }
-        acc[row.order_id].items.push({
-          name: row.item_name,
-          quantity: row.quantity,
-          category: row.category
-        });
-        return acc;
-      }, {});
+            SELECT 
+                o.order_id, 
+                o.status,
+                o.note,
+                oi.item_name, 
+                oi.quantity, 
+                i.category
+            FROM orders o
+            LEFT JOIN order_items oi ON o.order_id = oi.order_id
+            LEFT JOIN items i ON oi.item_name = i.name
+            WHERE oi.status = 'pending'
+            `);
 
-      return Object.values(grouped);
-      } catch (err) {
-        return reply.status(500).send({ message: err.message });
-      }
+            // Raggruppiamo per ordine
+            const grouped = rows.reduce((acc, row) => {
+                if (!acc[row.order_id]) {
+                    acc[row.order_id] = {
+                        id: row.order_id,
+                        status: row.status,
+                        note: row.note || '',
+                        items: []
+                    };
+                }
+                acc[row.order_id].items.push({
+                    name: row.item_name,
+                    quantity: row.quantity,
+                    category: row.category
+                });
+                return acc;
+            }, {});
+
+            return Object.values(grouped);
+        } catch (err) {
+            return reply.status(500).send({ message: err.message });
+        }
     });
 
 
     // GET all items (retrieve catalog)
     fastify.get("/items", async (request, reply) => {
         try {
-            const rows = await dbAll("SELECT * FROM items");
-            return rows;
+            const items = await dbAll("SELECT * FROM items");
+            return { items };
         } catch (err) {
 
             console.error("Errore durante il recupero degli articoli:", err.message);
@@ -105,7 +105,7 @@ module.exports = function (fastify, opts, done) {
         try {
             const totalPrice = request.body.totalPrice || 0;
             const note = request.body.note || '';
-            await dbRun('INSERT INTO orders (total_price,note) VALUES (?,?)', [totalPrice,note]);
+            await dbRun('INSERT INTO orders (total_price,note) VALUES (?,?)', [totalPrice, note]);
 
             const row = await dbGet("SELECT MAX(order_id) AS order_id FROM orders");
             const orderId = row.order_id;
@@ -123,22 +123,40 @@ module.exports = function (fastify, opts, done) {
 
             // Alla fine di TUTTO, emetto evento websocket con ordine
             const orderData = {
-              id: orderId,
-              items: request.body.order,
-              note
+                id: orderId,
+                items: request.body.order,
+                note
             };
-            
+
             fastify.io.emit('new-order', orderData);  // fastify.io è il websocket server (socket.io)
 
-            return reply.status(201).send({ 
-                id: orderId, 
-                status: "pending", 
+            return reply.status(201).send({
+                id: orderId,
+                status: "pending",
                 items: request.body.order,
                 note
             });
 
         } catch (err) {
             console.error("Errore durante l'inserimento dell'ordine:", err.message);
+            return reply.status(500).send({ message: err.message });
+        }
+    });
+
+    // DELETE an order by ID
+    fastify.delete("/delete-order/:id", async (request, reply) => {
+        const { id } = request.params;
+
+        try {
+            // Prima elimino le righe associate in order_items
+            await dbRun("DELETE FROM order_items WHERE order_id = ?", [id]);
+
+            // Poi elimino l'ordine stesso
+            const result = await dbRun("DELETE FROM orders WHERE order_id = ?", [id]);
+
+            return reply.send({ message: "Ordine eliminato con successo", id });
+        } catch (err) {
+            console.error("Errore durante l'eliminazione dell'ordine:", err.message);
             return reply.status(500).send({ message: err.message });
         }
     });
@@ -161,11 +179,11 @@ module.exports = function (fastify, opts, done) {
             console.log(orderId, category)
             const categoryRows = await dbAll(
                 `SELECT * 
-            FROM order_items oi
-            LEFT JOIN items i ON oi.item_name = i.name
-            WHERE oi.order_id = ?
-            AND oi.status = 'pending'
-            AND lower(i.category) = lower(?)`,
+                    FROM order_items oi
+                    LEFT JOIN items i ON oi.item_name = i.name
+                    WHERE oi.order_id = ?
+                    AND oi.status = 'pending'
+                    AND lower(i.category) = lower(?)`,
                 [orderId, category]
             );
 
@@ -185,9 +203,9 @@ module.exports = function (fastify, opts, done) {
                 console.log("riga completata, ordine in stato parziale")
                 await dbRun(
                     `UPDATE order_items
-            SET status = 'partial'
-            WHERE order_id = ? 
-                AND item_name IN (SELECT name FROM items WHERE lower(category) = lower(?))`,
+                    SET status = 'partial'
+                    WHERE order_id = ? 
+                    AND item_name IN (SELECT name FROM items WHERE lower(category) = lower(?))`,
                     [orderId, category]
                 );
 
@@ -215,7 +233,7 @@ module.exports = function (fastify, opts, done) {
 
             // Poi svuoto orders
             await dbRun("DELETE FROM orders");
-            
+
             // Resetto i contatori di riga
             await dbRun("DELETE FROM sqlite_sequence WHERE name in ('orders','order_items')");
 

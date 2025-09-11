@@ -43,7 +43,7 @@ module.exports = function (fastify, opts, done) {
         });
 
     // endpoint per eliminare un utente
-    fastify.delete('/delete/:id',
+    fastify.delete('/delete-user/:id',
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
 
             try {
@@ -69,6 +69,20 @@ module.exports = function (fastify, opts, done) {
                 );
 
                 reply.code(201).send("articolo creato: ", item);
+
+            } catch (err) {
+                reply.code(500).send({ error: 'Internal Server Error' });
+            }
+        });
+
+    fastify.delete('/delete-item/:id',
+        { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
+
+            try {
+                const { id } = request.params;
+                await dbRun('DELETE FROM items WHERE id = ?',
+                    [id]
+                );
 
             } catch (err) {
                 reply.code(500).send({ error: 'Internal Server Error' });

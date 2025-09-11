@@ -6,27 +6,58 @@ import axios from 'axios';
 const icons = {
     viewUsers: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
     createUser: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>`,
-    deleteUser: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>`,
+    viewItems: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>`,
     addItem: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>`
 }
 
 // Modal states
-const showCreateUserModal = ref(false);
-const showDeleteUserModal = ref(false);
-const showAddItemModal = ref(false);
 const showUsersModal = ref(false);
+const showCreateUserModal = ref(false);
+const showItemsModal = ref(false);
+const showAddItemModal = ref(false);
+
 
 // Form data
 const newUser = ref({ username: '', password: '', role: '' });
-const deleteUserId = ref('');
+const itemsList = ref([]);
 const newItem = ref({ name: '', price: '', category: '' });
 const usersList = ref([]);
 
 
+async function handleFetchItems() {
+    try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/items`,
+            { withCredentials: true }
+        );
+        itemsList.value = res.data.items;
+        showItemsModal.value = true;
+    } catch (error) {
+        console.error('Error fetching items: ', error);
+    }
+}
+
+async function handleDeleteItem(id) {
+    try {
+        const confirmed = window.confirm('Are you sure you want to delete this item?');
+        if (!confirmed) return;
+
+        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/admin/delete-item/${id}`,
+            { withCredentials: true }
+        );
+
+        if (res.status === 200) {
+            itemsList.value = itemsList.value.filter(item => item.id !== id);
+            console.log('Item deleted successfully');
+        }
+    } catch (error) {
+        console.error('Error deleting item: ', error);
+    }
+}
+
 async function handleCreate() {
     try {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/create-user`, newUser.value, 
-        { withCredentials: true }
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/create-user`, newUser.value,
+            { withCredentials: true }
         );
         console.log('User created: ', res.data)
         showCreateUserModal.value = false;
@@ -39,11 +70,19 @@ async function handleCreate() {
 
 async function handleDelete(id) {
     try {
-        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/admin/delete/${id}`, 
-        { withCredentials: true }
+        const confirmed = window.confirm('Are you sure you want to delete this user?');
+        if (!confirmed) return;
+
+        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/admin/delete-user/${id}`,
+            { withCredentials: true }
         );
-        console.log('User deleted: ', res.data);
-        deleteUserId.value = '';
+
+        if (res.status === 200) {
+            usersList.value = usersList.value.filter(user => user.id !== id);
+            console.log('User deleted successfully: ', res.data);
+        } else {
+            console.error('Failed to delete user: ', res);
+        }
 
     } catch (error) {
         console.error('Error deleting user: ', error);
@@ -52,8 +91,8 @@ async function handleDelete(id) {
 
 async function handleFetchUsers() {
     try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/users`, 
-        { withCredentials: true }
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/users`,
+            { withCredentials: true }
         );
         console.log('Users fetched successfully: ', res.data);
         usersList.value = res.data.users;
@@ -73,7 +112,7 @@ async function handleItems(n, p, c) {
             price: p,
             category: c
         }
-        , { withCredentials: true }
+            , { withCredentials: true }
         );
         console.log('Item added: ', res.data);
 
@@ -101,10 +140,10 @@ async function handleItems(n, p, c) {
                     <p>Add a new user to the system</p>
                 </div>
 
-                <div class="dashboard-card" @click="showDeleteUserModal = true">
-                    <div class="icon" v-html="icons.deleteUser"></div>
-                    <h3>Delete User</h3>
-                    <p>Remove a user from the system</p>
+                <div class="dashboard-card" @click="handleFetchItems">
+                    <div class="icon" v-html="icons.viewItems"></div>
+                    <h3>View Items</h3>
+                    <p>Manage inventory items</p>
                 </div>
 
                 <div class="dashboard-card" @click="showAddItemModal = true">
@@ -130,7 +169,8 @@ async function handleItems(n, p, c) {
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
-                            <th>Role</th>
+                            <th>Ruole</th>
+                            <th>Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -138,6 +178,11 @@ async function handleItems(n, p, c) {
                             <td>{{ user.id }}</td>
                             <td>{{ user.username }}</td>
                             <td>{{ user.role }}</td>
+                            <td>
+                                <button @click="handleDelete(user.id)" class="cancel-btn">
+                                    Delete
+                                </button>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -180,20 +225,43 @@ async function handleItems(n, p, c) {
         </div>
     </div>
 
-    <!-- Delete User Modal -->
-    <div v-if="showDeleteUserModal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Delete User</h2>
-            <form @submit.prevent="handleDelete(deleteUserId)">
-                <div class="form-group">
-                    <label>User ID:</label>
-                    <input v-model="deleteUserId" type="text" required>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit" class="confirm-btn">Delete</button>
-                    <button type="button" @click="showDeleteUserModal = false" class="cancel-btn">Cancel</button>
-                </div>
-            </form>
+    <!-- Add new Items List Modal -->
+    <div v-if="showItemsModal" class="modal-overlay">
+        <div class="modal-content users-modal">
+            <h2>Items List</h2>
+            <div class="users-list">
+                <table v-if="itemsList.length">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Category</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in itemsList" :key="item.id">
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>€{{ item.price.toFixed(2) }}</td>
+                            <td>{{ item.category }}</td>
+                            <td>
+                                <button 
+                                    @click="handleDeleteItem(item.id)" 
+                                    class="cancel-btn"
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else>No items found</p>
+            </div>
+            <div class="modal-actions">
+                <button @click="showItemsModal = false" class="cancel-btn">Close</button>
+            </div>
         </div>
     </div>
 
@@ -380,7 +448,8 @@ table {
     margin: 1rem 0;
 }
 
-th, td {
+th,
+td {
     padding: 0.75rem;
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -397,16 +466,16 @@ tr:hover {
 }
 
 .home-link {
-  display: block;
-  text-align: center;
-  margin-top: 2rem;
-  color: #0d6efd;
-  text-decoration: none;
-  transition: color 0.2s ease;
+    display: block;
+    text-align: center;
+    margin-top: 2rem;
+    color: #0d6efd;
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .home-link:hover {
-  color: #0a58ca;
+    color: #0a58ca;
 }
 
 /* SVG styles */
@@ -421,5 +490,4 @@ tr:hover {
         grid-template-columns: 1fr;
     }
 }
-
 </style>
