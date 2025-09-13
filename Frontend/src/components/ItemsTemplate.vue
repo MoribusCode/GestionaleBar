@@ -19,12 +19,7 @@ function addItem(item) {
 <template>
   <div class="items-container">
     <div class="items-grid">
-      <button 
-        v-for="item in props.items" 
-        :key="item.id"
-        @click="addItem(item)"
-        class="item-card"
-      >
+      <button v-for="item in props.items" :key="item.id" @click="addItem(item)" class="item-card">
         <div class="item-content">
           <h3 class="item-name">{{ item.name }}</h3>
           <div class="item-price">€{{ item.price.toFixed(2) }}</div>
@@ -37,30 +32,34 @@ function addItem(item) {
 
 <style scoped>
 .items-container {
-  padding: 1rem;
+  padding: 3rem 3rem 3rem 3rem;
 }
 
 .items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .item-card {
-  background: white;
+  background: var(--secondary-color);
   border: none;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
   cursor: pointer;
-  padding: 0;
+  padding: 1.5rem;
   overflow: hidden;
   width: 100%;
-  text-align: left;
+  text-align: center;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .item-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -70,45 +69,57 @@ function addItem(item) {
 }
 
 .item-content {
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .item-name {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-  color: #2c3e50;
-  font-weight: 600;
+  margin: 0;
+  font-size: 1.75rem;
+  color: white;
+  font-weight: 500;
 }
 
 .item-price {
-  font-size: 1.2rem;
+  font-size: 1.75rem;
   font-weight: 500;
-  color: #0d6efd;
-  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+  margin: 0;
 }
 
 .item-category {
-  font-size: 0.8rem;
-  color: #6c757d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 @media (max-width: 768px) {
   .items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
   }
 
-  .item-content {
-    padding: 0.75rem;
+  .items-container {
+    padding: 1rem;
+  }
+
+  .item-card {
+    padding: 1rem;
   }
 
   .item-name {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
-  
+
   .item-price {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+  }
+
+  .item-category {
+    font-size: 0.9rem;
   }
 }
 </style>

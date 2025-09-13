@@ -26,7 +26,7 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       order_id INTEGER PRIMARY KEY,
-      status TEXT DEFAULT 'pending',
+      status TEXT DEFAULT 'in attesa',
       total_price DECIMAL(10,2),
       note TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -40,7 +40,7 @@ db.serialize(() => {
       order_id INTEGER,
       item_name TEXT,
       quantity INTEGER,
-      status TEXT DEFAULT 'pending',
+      status TEXT DEFAULT 'in attesa',
       FOREIGN KEY (order_id) REFERENCES orders(id)
     )
   `);

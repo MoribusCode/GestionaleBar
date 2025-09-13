@@ -38,7 +38,7 @@ async function fetchPendingOrders() {
       }
     });
   } catch (err) {
-    console.error("Errore nel recupero ordini pending:", err);
+    console.error("Errore nel recupero ordini in attesa:", err);
   }
 }
 
@@ -133,13 +133,15 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  min-height: 100vh;
 }
 
 .workstation-title {
-  color: #2c3e50;
+  color: black;
   margin-bottom: 2rem;
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 2.5rem;
+  font-weight: 700;
   text-transform: capitalize;
 }
 
@@ -151,9 +153,9 @@ onMounted(() => {
 
 .order-card {
   position: relative;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--secondary-color);
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   will-change: transform;
@@ -165,24 +167,26 @@ onMounted(() => {
 }
 
 .order-header {
-  background: #f8f9fa;
+  background: var(--secondary-color);
   padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #555;
 }
 
 .order-id {
   margin: 0;
-  color: #2c3e50;
+  color: white;
   font-size: 1.2rem;
 }
 
 .close-btn {
-  background: #28a745;
+  background: var(--secondary-color);
   color: white;
-  border: none;
+  border-width: 1px;
+  border-color: var(--primary-color);
+  border-style: solid;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
@@ -191,19 +195,24 @@ onMounted(() => {
 }
 
 .close-btn:hover {
-  background: #218838;
+  background: #333333;
 }
 
 .order-note {
+  border-color: white;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 8px;
   padding: 0.75rem 1rem;
-  background: #fff3cd;
-  color: #664d03;
+  background: #333333;
+  color: #d3d3d3;
   font-size: 0.9rem;
 }
 
 .note-label {
   font-weight: 600;
   margin-right: 0.5rem;
+  color: #d3d3d3;
 }
 
 .items-list {
@@ -215,7 +224,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #555;
 }
 
 .order-item:last-child {
@@ -223,15 +232,15 @@ onMounted(() => {
 }
 
 .item-name {
-  color: #2c3e50;
+  color: white;
   font-weight: 500;
 }
 
 .item-quantity {
-  background: #e9ecef;
+  background: #3333;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  color: #495057;
+  color: white;
   font-weight: 600;
 }
 
@@ -249,8 +258,8 @@ onMounted(() => {
 }
 
 .dialog {
-  background: white;
-  border-radius: 12px;
+  background: #4A4A4A;
+  border-radius: 20px;
   padding: 1.5rem;
   width: 90%;
   max-width: 400px;
@@ -260,12 +269,12 @@ onMounted(() => {
 
 .dialog h3 {
   margin: 0 0 1rem 0;
-  color: #2c3e50;
+  color: white;
 }
 
 .dialog p {
   margin: 0 0 1.5rem 0;
-  color: #666;
+  color: #ffffff;
 }
 
 .dialog-actions {
@@ -274,31 +283,42 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.cancel-btn, .confirm-btn {
+.cancel-btn {
   padding: 0.5rem 1rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.confirm-btn {
+  padding: 0.5rem 1rem;
+  border-width: 1px;
+  border-color: white;
+  border-style: solid;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s ease;
 }
 
 .cancel-btn {
-  background: #6c757d;
+  background: var(--primary-color);
   color: white;
 }
 
 .cancel-btn:hover {
-  background: #5a6268;
+  background: var(--primary-hover);
 }
 
 .confirm-btn {
-  background: #28a745;
+  background: #4a4a4a;
   color: white;
 }
 
 .confirm-btn:hover {
-  background: #218838;
+  background: #333333;
 }
 
 @keyframes slideIn {

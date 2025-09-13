@@ -49,11 +49,13 @@ const showSidebar = computed(() => {
 .content-expanded {
   margin-left: 0;
   width: 100%;
+  padding: 0px;
 }
 
 .no-sidebar {
   margin-left: 0;
   width: 100%;
+  padding: 0px;
 }
 
 /* Add media query for mobile responsiveness */

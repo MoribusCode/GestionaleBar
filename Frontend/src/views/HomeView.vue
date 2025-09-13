@@ -14,57 +14,39 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
 <template>
   <div class="home-container">
     <div class="menu-grid">
-      <router-link 
-        v-if="isAdmin()" 
-        to="/admin" 
-        class="menu-card admin"
-      >
+      <router-link v-if="isAdmin()" to="/admin" class="menu-card admin">
+        <i class="fas fa-cog" style="font-size: 2.5rem; color: white;"></i>
         <h2>Admin Dashboard</h2>
         <span class="card-description">Gestione sistema</span>
       </router-link>
 
-      <router-link 
-        v-if="isCashier()" 
-        to="/orders" 
-        class="menu-card orders"
-      >
+      <router-link v-if="isCashier()" to="/orders" class="menu-card orders">
+        <i class="fas fa-plus" style="font-size: 2.5rem; color: white;"></i>
         <h2>Nuovo ordine</h2>
         <span class="card-description">Crea un nuovo ordine</span>
       </router-link>
 
-      <router-link 
-        v-if="isStaff()" 
-        to="/history" 
-        class="menu-card history"
-      >
+      <router-link v-if="isStaff()" to="/history" class="menu-card history">
+        <i class="fas fa-history" style="font-size: 2.5rem; color: white;"></i>
         <h2>Storico</h2>
         <span class="card-description">Visualizza ordini</span>
       </router-link>
 
-      <router-link 
-        v-if="isFood()" 
-        to="/cicchetti" 
-        class="menu-card food"
-      >
+      <router-link v-if="isFood()" to="/cicchetti" class="menu-card food">
+        <i class="fa-solid fa-burger" style="font-size: 2.5rem; color: white;"></i>
         <h2>Cicchetti</h2>
         <span class="card-description">Gestione cicchetti</span>
       </router-link>
 
-      <router-link 
-        v-if="isBeer()" 
-        to="/birre" 
-        class="menu-card beer"
-      >
-        <h2>Birre</h2>
-        <span class="card-description">Gestione birre</span>
+      <router-link v-if="isBeer()" to="/birre" class="menu-card beer">
+        <i class="fa-solid fa-beer-mug-empty" style="font-size: 2.5rem; color: white;"></i>
+        <h2>Spina</h2>
+        <span class="card-description">Gestione spina</span>
       </router-link>
 
-      <router-link 
-        v-if="isDrink()" 
-        to="/drinks" 
-        class="menu-card drinks"
-      >
-        <h2>Drinks</h2>
+      <router-link v-if="isDrink()" to="/drinks" class="menu-card drinks">
+        <i class="fa-solid fa-martini-glass" style="font-size: 2.5rem; color: white;"></i>
+        <h2>Drink</h2>
         <span class="card-description">Gestione drinks</span>
       </router-link>
     </div>
@@ -77,45 +59,46 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
   margin: 0 auto;
   padding: 2rem;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin-top: 2rem;
 }
 
 .menu-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
+  background: #4A4A4A;
+  border-radius: 20px;
+  padding: 2.5rem;
   text-decoration: none;
-  color: #2c3e50;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  aspect-ratio: 1;
+  justify-content: center; 
+  gap: 0.75rem;
 }
 
 .menu-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .menu-card h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.5rem;
+  margin: 0;
+  font-size: 1.75rem;
   color: white;
+  font-weight: 500;
 }
 
 .card-description {
-  color: #666;
-  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
 }
 
 .menu-card.admin,
@@ -124,7 +107,7 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
 .menu-card.food,
 .menu-card.beer,
 .menu-card.drinks {
-  background: linear-gradient(135deg, #4299e1 0%, #2b6cb0 100%);
+  background: #4A4A4A;
 }
 
 .menu-card.admin .card-description,
@@ -157,19 +140,35 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
 @media (max-width: 768px) {
   .home-container {
     padding: 1rem;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    left: 0;
   }
 
   .menu-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 1rem;
+    width: 100%;
   }
 
   .menu-card {
-    padding: 1.5rem;
+    padding: 1rem;
+    aspect-ratio: 1;
+    max-width: 180px;
+    width: 100%;
   }
 
   .menu-card h2 {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
+  }
+
+  .card-description {
+    font-size: 0.9rem; 
+  }
+  
+  .menu-card i {
+    font-size: 2rem !important; 
   }
 }
 </style>

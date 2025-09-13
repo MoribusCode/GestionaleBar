@@ -55,7 +55,7 @@ module.exports = function (fastify, opts, done) {
             FROM orders o
             LEFT JOIN order_items oi ON o.order_id = oi.order_id
             LEFT JOIN items i ON oi.item_name = i.name
-            WHERE oi.status = 'pending'
+            WHERE oi.status = 'in attesa'
             `);
 
             // Raggruppiamo per ordine
@@ -167,14 +167,14 @@ module.exports = function (fastify, opts, done) {
 
         try {
             console.log("ordine:", orderId, ",", category)
-            // Controllo quante righe "pending" ci sono nell'ordine
+            // Controllo quante righe "in attesa" ci sono nell'ordine
             const pendingRows = await dbAll(
-                "SELECT * FROM order_items WHERE order_id = ? AND status = 'pending'",
+                "SELECT * FROM order_items WHERE order_id = ? AND status = 'in attesa'",
                 [orderId]
             );
 
             if (pendingRows.length === 0) {
-                return reply.status(400).send({ message: "Non ci sono righe pending da chiudere" });
+                return reply.status(400).send({ message: "Non ci sono righe in attesa da chiudere" });
             }
             console.log(orderId, category)
             const categoryRows = await dbAll(
@@ -182,7 +182,7 @@ module.exports = function (fastify, opts, done) {
                     FROM order_items oi
                     LEFT JOIN items i ON oi.item_name = i.name
                     WHERE oi.order_id = ?
-                    AND oi.status = 'pending'
+                    AND oi.status = 'in attesa'
                     AND lower(i.category) = lower(?)`,
                 [orderId, category]
             );
@@ -191,19 +191,19 @@ module.exports = function (fastify, opts, done) {
             if (categoryRows.length === pendingRows.length) {
                 console.log("ultima parte fatta, chiudo totalmente l'ordine")
                 await dbRun(
-                    "UPDATE order_items SET status = 'closed' WHERE order_id = ?",
+                    "UPDATE order_items SET status = 'completato' WHERE order_id = ?",
                     [orderId]
                 );
                 await dbRun(
-                    "UPDATE orders SET status = 'closed' WHERE order_id = ?",
+                    "UPDATE orders SET status = 'completato' WHERE order_id = ?",
                     [orderId]
                 );
-                return { orderId, status: "closed" };
+                return { orderId, status: "completato" };
             } else {
                 console.log("riga completata, ordine in stato parziale")
                 await dbRun(
                     `UPDATE order_items
-                    SET status = 'partial'
+                    SET status = 'parziale'
                     WHERE order_id = ? 
                     AND item_name IN (SELECT name FROM items WHERE lower(category) = lower(?))`,
                     [orderId, category]
@@ -211,13 +211,13 @@ module.exports = function (fastify, opts, done) {
 
                 // Aggiorna status ordine se non era già parziale
                 const order = await dbGet("SELECT status FROM orders WHERE order_id = ?", [orderId]);
-                if (order.status !== "partial") {
+                if (order.status !== "parziale") {
                     await dbRun(
-                        "UPDATE orders SET status = 'partial' WHERE order_id = ?",
+                        "UPDATE orders SET status = 'parziale' WHERE order_id = ?",
                         [orderId]
                     );
                 }
-                return { orderId, status: "partial", category };
+                return { orderId, status: "parziale", category };
             }
         } catch (err) {
             console.error("Errore chiusura ordine:", err.message);

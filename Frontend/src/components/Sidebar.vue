@@ -99,18 +99,18 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
   left: 0;
   top: 0;
   bottom: 0;
-  width: 240px;
-  background-color: #2c3e50;
+  width: 280px;
+  background-color: #333333;
   color: white;
-  padding: 4rem 0 1rem;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  padding: 1rem 0;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
   z-index: 100;
   transition: transform 0.3s ease;
   transform: translateX(0);
 }
 
 .sidebar.collapsed {
-  transform: translateX(-240px);
+  transform: translateX(-280px);
 }
 
 .sidebar-container {
@@ -123,12 +123,12 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
 
 .hamburger-btn {
   position: fixed;
-  left: 1rem;
-  top: 1rem;
+  left: 0.5rem;
+  top: 0.5rem;
   z-index: 1000;
-  background: #2c3e50;
+  background: #333333;
   border: none;
-  color: white;
+  color: #FF5733;
   cursor: pointer;
   padding: 0.75rem;
   border-radius: 4px;
@@ -136,14 +136,13 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .logout-btn {
-  margin: 1rem;
-  padding: 0.75rem;
-  background: rgba(220, 53, 69, 0.1);
-  color: #dc3545;
+  margin: auto 1rem 1rem 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #FF5733;
+  color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -155,7 +154,7 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
 }
 
 .logout-btn:hover {
-  background: rgba(220, 53, 69, 0.2);
+  background: #E64A2E;  
 }
 
 .btn-text {
@@ -171,11 +170,7 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
 }
 
 .hamburger-btn.sidebar-open {
-  left: 200px;
-}
-
-.hamburger-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  left: 220px;
 }
 
 .hamburger-btn.active {
@@ -195,26 +190,28 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
   flex: 1;
   flex-direction: column;
   gap: 0.5rem;
+  margin-top: 5rem;;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 0.75rem 1.5rem;
+  padding: 1.25rem 2rem;
   color: #fff;
   text-decoration: none;
   transition: background-color 0.2s ease;
   white-space: nowrap;
   overflow: hidden;
+  font-size: 1.5rem;
+  font-weight: 500;
 }
 
 .nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: #444444;
 }
 
 .nav-item.router-link-active {
-  background-color: rgba(255, 255, 255, 0.15);
-  font-weight: 500;
+  background-color: #444444;
 }
 
 .nav-text {
@@ -227,30 +224,44 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
   margin-right: 0.5rem;
 }
 
-.toggle-btn:hover {
-  background: #f8f9fa;
-}
-
-.toggle-btn {
-  position: absolute;
-  right: -12px;
-  top: 20px;
-  width: 24px;
-  height: 24px;
-  background: white;
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 101;
-}
-
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
+    width: 240px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 999;
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-240px);
+  }
+
+  .sidebar.collapsed + .home-container {
+    margin-left: 0;
+  }
+
+  .nav-item {
+    padding: 0.75rem 1.5rem; 
+    font-size: 1.2rem;
+  }
+
+  .hamburger-btn {
+    left: 1rem;
+    top: 1rem;
+    padding: 0.5rem;
+    position: fixed;
+  }
+
+  .hamburger-btn svg {
+    width: 20px;
+    height: 20px; 
+  }
+
+  .hamburger-btn.sidebar-open {
+    left: 1rem; 
   }
 
   .sidebar.collapsed {
@@ -260,6 +271,32 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
 
   .sidebar.collapsed .nav-text {
     display: block;
+  }
+
+  
+  .sidebar-nav {
+    margin-top: 4rem; 
+    gap: 0.25rem; 
+  }
+
+    .logout-btn {
+    padding: 0.75rem 1.25rem; 
+    font-size: 1rem; 
+    margin: auto 1rem 1rem 1rem; 
+    gap: 0.75rem; 
+  }
+
+  .logout-btn svg {
+    width: 18px; 
+    height: 18px;
+  }
+
+  .btn-text {
+    display: inline-block !important;
+  }
+
+  .collapsed .btn-text {
+    display: inline-block !important;
   }
 }
 </style>

@@ -12,7 +12,8 @@ module.exports = fp (async (fastify, opts) => {
             secure: false,
             sameSite: 'strict', // Prevent CSRF attacks
             path: '/',
-            signed: false
+            signed: true,
+            domain: process.env.COOKIE_DOMAIN,
         }
     });
 });

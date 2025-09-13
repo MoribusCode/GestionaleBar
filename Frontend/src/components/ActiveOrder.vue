@@ -105,15 +105,15 @@ onUnmounted(() => {
 .active-order-container {
   max-width: 600px;
   margin: 0 auto;
-  padding: 1.5rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  background: var(--secondary-color);
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .order-title {
-  color: #2c3e50;
-  font-size: 1.8rem;
+  color: white;
+  font-size: 2rem;
   margin-bottom: 1.5rem;
   text-align: center;
 }
@@ -128,8 +128,9 @@ onUnmounted(() => {
 
 .itemList {
   padding: 0.75rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 
 .item-details {
   display: flex;
@@ -140,22 +141,22 @@ onUnmounted(() => {
 
 .item-name {
   font-size: 1.1rem;
-  color: #2c3e50;
+  color: white;
 }
 
 .remove-btn {
-  background: #dc3545;
+  background: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 4px 12px;
   font-size: 1.2rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .remove-btn:hover {
-  background: #bb2d3b;
+  background: var(--primary-hover);
 }
 
 .note-section {
@@ -166,16 +167,18 @@ onUnmounted(() => {
   width: 100%;
   min-height: 80px;
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   resize: vertical;
   font-family: inherit;
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
 }
 
 .total-section {
   margin: 1.5rem 0;
   text-align: right;
-  color: #2c3e50;
+  color: white;
 }
 
 .action-buttons {
@@ -188,40 +191,45 @@ onUnmounted(() => {
   flex: 1;
   padding: 0.75rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .reset {
-  background: #6c757d;
+  background: var(--secondary-color);
+  border-width: 1px;
+  border-color: white;
+  border-style: solid;
   color: white;
 }
 
 .submit {
-  background: #28a745;
+  background: var(--primary-color);
   color: white;
 }
 
-.reset:hover {
-  background: #5a6268;
+.submit:hover {
+  background: var(--primary-hover);
 }
 
-.submit:hover {
-  background: #218838;
+.reset:hover, .submit:hover {
+  transform: translateY(-2px);
 }
 
 .home-link {
   display: block;
   text-align: center;
-  color: #0d6efd;
+  color: white;
   text-decoration: none;
   margin-top: 1rem;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
 }
 
 .home-link:hover {
-  text-decoration: underline;
+  opacity: 1;
 }
 
 /* Custom Scrollbar */
@@ -241,5 +249,32 @@ onUnmounted(() => {
 
 .order-list::-webkit-scrollbar-thumb:hover {
   background: #999;
+}
+
+@media (max-width: 1024px) {
+    .action-buttons {
+        gap: 2rem;  /* Increased from 1rem to 2rem */
+        padding: 0 2rem;  /* Add horizontal padding */
+        margin: 2rem 0;   /* Increased vertical margin */
+    }
+
+    .btn {
+        padding: 1rem;    /* Increased padding */
+        font-size: 1.1rem;  /* Slightly larger font */
+    }
+}
+
+/* Further adjust for mobile */
+@media (max-width: 768px) {
+    .action-buttons {
+        flex-direction: column;  /* Stack buttons vertically */
+        gap: 1rem;
+        padding: 0 1rem;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 1rem;
+    }
 }
 </style>

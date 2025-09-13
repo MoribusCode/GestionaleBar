@@ -105,39 +105,20 @@ async function closeDay() {
   <div class="history-container">
     <div class="header">
       <h1>Storico ordini</h1>
-      <button class="export-btn" @click="exportToExcel">
-        Esporta in Excel
-      </button>
-      <button class="export-btn" @click="closeDay">
-        Chiudi giornata
-      </button>
     </div>
 
     <div class="orders-list">
-      <div v-for="order in orders" 
-        :key="order.id" 
-        class="order-card" 
-        :class="{ 'expanded': shown === order.id }">
+      <div v-for="order in orders" :key="order.id" class="order-card" :class="{ 'expanded': shown === order.id }">
         <div class="order-header" @click="toggleOrder(order.id)">
           <div class="order-info">
-          <strong>Ordine #{{ order.id }}</strong>
-            <span class="order-status" :class="order.status.toLowerCase()">
+            <strong>Ordine #{{ order.id }}</strong>
+            <span class="order-status" :class="order.status.toLowerCase().replace(' ', '-')">
               {{ order.status }}
             </span>
           </div>
-          <button 
-            class="delete-btn" 
-            @click="deleteOrder(order.id, $event)"
-          >
-            <svg 
-              width="16" 
-              height="16" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              stroke-width="2"
-            >
-              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+          <button class="delete-btn" @click="deleteOrder(order.id, $event)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
             </svg>
           </button>
         </div>
@@ -159,74 +140,113 @@ async function closeDay() {
     <router-link to="/" class="home-link">
       <h3>Home</h3>
     </router-link>
+
+    <div class="footer">
+      <div class="footer-buttons">
+        <button class="export-btn" @click="exportToExcel">
+          Esporta in Excel
+        </button>
+        <button class="export-btn" @click="closeDay">
+          Chiudi giornata
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 
 <style scoped>
 .history-container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 6rem 2rem 2rem;
+  min-height: 100vh;
+  position: relative;
+}
+
+h1 {
+  font-weight: 700;
+  font-size: 2.5rem;
+  margin: 0px 0px 0px 0px;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  background: #f1f1f1;
+  padding: 1rem 2rem;
+  border-top-color: white;
+  border-top-style: solid;
+  border-top-width: 1px;
+  z-index: 99;
+}
+
+
+.footer-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  max-width: 900px;
+  margin-left: auto;
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-bottom: 2rem;
 }
 
 .header h1 {
-  color: #2c3e50;
-  margin: 0;
+  color: black;
+  font-size: 2.5rem;
 }
 
 .export-btn {
-  background: #28a745;
+  background: var(--primary-color);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  padding: 1rem 2rem;
+  border-radius: 12px;
   cursor: pointer;
+  font-size: 1rem;
   font-weight: 500;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .export-btn:hover {
-  background: #218838;
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
 }
 
 .delete-btn {
   background: none;
   border: none;
-  color: #dc3545;
+  color: rgba(255, 255, 255, 0.8);
   padding: 0.5rem;
-  border-radius: 4px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .delete-btn:hover {
-  background-color: rgba(220, 53, 69, 0.1);
+  color: #FF4444;
 }
 
 .orders-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .order-card {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
+  background: #4A4A4A;
+  border-radius: 20px;
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .order-card:hover {
@@ -235,36 +255,40 @@ async function closeDay() {
 }
 
 .order-header {
-  padding: 1rem;
+  padding: 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8f9fa;
+  background: transparent;
+  color: white;
 }
 
 .order-info {
   display: flex;
   align-items: center;
   gap: 1rem;
-  cursor: pointer;
-  flex: 1;
 }
 
 .order-status {
-  padding: 0.25rem 0.75rem;
+  padding: 0.25rem 1rem;
+  border-style: solid;
+  border-width: 1px;
   border-radius: 999px;
   font-size: 0.875rem;
-  font-weight: 500;
+  color: white;
+  background: var(--secondary-color);
 }
 
-.order-status.completed {
-  background: #d1e7dd;
-  color: #0f5132;
+.order-status.completato {
+  border-color: rgb(142, 221, 22);
 }
 
-.order-status.pending {
-  background: #fff3cd;
-  color: #664d03;
+.order-status.in-attesa {
+  border-color: var(--primary-color);
+}
+
+.order-status.parziale {
+  border-color: rgb(255, 193, 7)
 }
 
 .order-details {
@@ -287,11 +311,11 @@ async function closeDay() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.35rem 0.75rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-  margin: 0;
-  border: none;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  color: white;
 }
 
 .order-item:last-child {
@@ -299,13 +323,13 @@ async function closeDay() {
 }
 
 .item-name {
-  color: #2c3e50;
+  color: white;
   font-size: 0.95rem;
   margin-right: 0.5rem;
 }
 
 .item-quantity {
-  color: #6c757d;
+  color: white;
   font-weight: 500;
   font-size: 0.95rem;
   min-width: 2.5rem;
@@ -313,26 +337,44 @@ async function closeDay() {
 }
 
 .order-total {
-  padding-top: 0.75rem;
-  border-top: 1px solid #eee;
   text-align: right;
-  font-weight: 600;
-  color: #2c3e50;
-  font-size: 1rem;
+  color: white;
+  font-size: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .home-link {
   display: block;
   text-align: center;
-  margin-top: 2rem;
-  color: #0d6efd;
+  padding: 1rem;
+  color: rgba(0, 0, 0, 0.8);
   text-decoration: none;
-  transition: color 0.2s ease;
+  background: #f1f1f1;
+  border-radius: 12px;
+  margin: 0 auto;
+  max-width: 200px;
+  transition: all 0.3s ease;
+}
+
+.action-buttons {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .home-link:hover {
-  color: #0a58ca;
+  transform: translateY(-2px)
 }
+
 
 @media (max-width: 768px) {
   .history-container {
@@ -342,7 +384,21 @@ async function closeDay() {
   .header {
     flex-direction: column;
     gap: 1rem;
-    text-align: center;
+  }
+
+  .footer {
+    padding: 1rem;
+  }
+
+  .footer-buttons {
+    padding-right: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .export-btn {
+    width: auto;
+    min-width: 150px; 
   }
 }
 </style>

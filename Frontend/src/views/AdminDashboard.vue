@@ -130,46 +130,46 @@ async function handleItems(n, p, c) {
             <div class="button-grid">
                 <div class="dashboard-card" @click="handleFetchUsers">
                     <div class="icon" v-html="icons.viewUsers"></div>
-                    <h3>View Users</h3>
-                    <p>View all registered users in the system</p>
+                    <h3>Utenti</h3>
+                    <p>Visualizza tutti gli utetnti del sistema</p>
                 </div>
 
                 <div class="dashboard-card" @click="showCreateUserModal = true">
                     <div class="icon" v-html="icons.createUser"></div>
-                    <h3>Create User</h3>
-                    <p>Add a new user to the system</p>
+                    <h3>Crea Utente</h3>
+                    <p>Aggiungi un nuovo utente al sistema</p>
                 </div>
 
                 <div class="dashboard-card" @click="handleFetchItems">
                     <div class="icon" v-html="icons.viewItems"></div>
-                    <h3>View Items</h3>
-                    <p>Manage inventory items</p>
+                    <h3>Inventario</h3>
+                    <p>Visualizza e gestisci tutti gli articoli nell'inventario</p>
                 </div>
 
                 <div class="dashboard-card" @click="showAddItemModal = true">
                     <div class="icon" v-html="icons.addItem"></div>
-                    <h3>Add Item</h3>
-                    <p>Add new items to the inventory</p>
+                    <h3>Aggiungi Articolo</h3>
+                    <p>Aggiungi un nuovo articolo all'inventario</p>
                 </div>
             </div>
         </div>
 
         <router-link to="/" class="home-link">
-            <h3>Home</h3>
+            <h2>Home</h2>
         </router-link>
     </div>
 
     <!-- Users List Modal -->
     <div v-if="showUsersModal" class="modal-overlay">
         <div class="modal-content users-modal">
-            <h2>Users List</h2>
+            <h2>Lista Utenti</h2>
             <div class="users-list">
                 <table v-if="usersList.length">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
-                            <th>Ruole</th>
+                            <th>Ruolo</th>
                             <th>Azioni</th>
                         </tr>
                     </thead>
@@ -186,10 +186,10 @@ async function handleItems(n, p, c) {
                         </tr>
                     </tbody>
                 </table>
-                <p v-else>No users found</p>
+                <p v-else>Nessun utente trovato</p>
             </div>
             <div class="modal-actions">
-                <button @click="showUsersModal = false" class="cancel-btn">Close</button>
+                <button @click="showUsersModal = false" class="cancel-btn">Chiudi</button>
             </div>
         </div>
     </div>
@@ -197,7 +197,7 @@ async function handleItems(n, p, c) {
     <!-- Create User Modal -->
     <div v-if="showCreateUserModal" class="modal-overlay">
         <div class="modal-content">
-            <h2>Create New User</h2>
+            <h2>Crea un nuovo utente</h2>
             <form @submit.prevent="handleCreate">
                 <div class="form-group">
                     <label>Username:</label>
@@ -208,7 +208,7 @@ async function handleItems(n, p, c) {
                     <input v-model="newUser.password" type="password" required>
                 </div>
                 <div class="form-group">
-                    <label>Role:</label>
+                    <label>Ruolo:</label>
                     <select v-model="newUser.role" required>
                         <option value="admin">Admin</option>
                         <option value="cashier">Cassa</option>
@@ -218,8 +218,8 @@ async function handleItems(n, p, c) {
                     </select>
                 </div>
                 <div class="modal-actions">
-                    <button type="submit" class="confirm-btn">Create</button>
-                    <button type="button" @click="showCreateUserModal = false" class="cancel-btn">Cancel</button>
+                    <button type="submit" class="confirm-btn">Crea</button>
+                    <button type="button" @click="showCreateUserModal = false" class="cancel-btn">Chiudi</button>
                 </div>
             </form>
         </div>
@@ -228,16 +228,16 @@ async function handleItems(n, p, c) {
     <!-- Add new Items List Modal -->
     <div v-if="showItemsModal" class="modal-overlay">
         <div class="modal-content users-modal">
-            <h2>Items List</h2>
+            <h2>Lista Articoli</h2>
             <div class="users-list">
                 <table v-if="itemsList.length">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Name</th>
-                            <th>Price</th>
-                            <th>Category</th>
-                            <th>Actions</th>
+                            <th>Nome</th>
+                            <th>Prezzo</th>
+                            <th>Categoria</th>
+                            <th>Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -251,16 +251,16 @@ async function handleItems(n, p, c) {
                                     @click="handleDeleteItem(item.id)" 
                                     class="cancel-btn"
                                 >
-                                    Delete
+                                    Rimuovi
                                 </button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <p v-else>No items found</p>
+                <p v-else>Nessun articolo trovato</p>
             </div>
             <div class="modal-actions">
-                <button @click="showItemsModal = false" class="cancel-btn">Close</button>
+                <button @click="showItemsModal = false" class="cancel-btn">Chiudi</button>
             </div>
         </div>
     </div>
@@ -268,23 +268,23 @@ async function handleItems(n, p, c) {
     <!-- Add Item Modal -->
     <div v-if="showAddItemModal" class="modal-overlay">
         <div class="modal-content">
-            <h2>Add New Item</h2>
+            <h2>Aggiungi nuovo articolo</h2>
             <form @submit.prevent="handleItems(newItem.name, newItem.price, newItem.category)">
                 <div class="form-group">
-                    <label>Name:</label>
+                    <label>Nome:</label>
                     <input v-model="newItem.name" type="text" required>
                 </div>
                 <div class="form-group">
-                    <label>Price:</label>
+                    <label>Prezzo:</label>
                     <input v-model="newItem.price" type="number" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label>Category:</label>
+                    <label>Categoria:</label>
                     <input v-model="newItem.category" type="text" required>
                 </div>
                 <div class="modal-actions">
-                    <button type="submit" class="confirm-btn">Add Item</button>
-                    <button type="button" @click="showAddItemModal = false" class="cancel-btn">Cancel</button>
+                    <button type="submit" class="confirm-btn">Aggiungi</button>
+                    <button type="button" @click="showAddItemModal = false" class="cancel-btn">Chiudi</button>
                 </div>
             </form>
         </div>
@@ -293,21 +293,22 @@ async function handleItems(n, p, c) {
 
 <style scoped>
 .admin-view {
-    min-height: 100vh;
-    background-color: #f5f5f5;
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 2rem;
+    min-height: 100vh;
 }
 
 .dashboard-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 1rem;
 }
 
 h1 {
-    color: #2c3e50;
+    color: 4A4A4A;
     margin-bottom: 2rem;
     font-size: 2.5rem;
+    font-weight: 700;
     text-align: center;
 }
 
@@ -319,42 +320,52 @@ h1 {
 }
 
 .dashboard-card {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 15px;
+    background: #4A4A4A;
+    border-radius: 20px;
+    padding: 2.5rem;
+    text-decoration: none;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
-    cursor: pointer;
-    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    text-align: center;
+    aspect-ratio: 1;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
 }
 
 .dashboard-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .icon {
-    background-color: #3498db;
     color: white;
-    padding: 1rem;
-    border-radius: 12px;
     margin-bottom: 0.5rem;
 }
 
-h3 {
-    color: #2c3e50;
+h2 {
+    color: black;
+    text-align: center;
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+h3 {
+    color: white;
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 500;
 }
 
 p {
-    color: #666;
+    color: rgba(255, 255, 255, 0.8);
     margin: 0;
-    font-size: 0.9rem;
+    font-weight: 500;
+    font-size: 1rem;
 }
 
 .modal-overlay {
@@ -363,7 +374,7 @@ p {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -371,65 +382,89 @@ p {
 }
 
 .modal-content {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 10px;
+    background-color: #2c2c2c;
+    padding: 2.5rem;
+    border-radius: 20px;
     width: 90%;
     max-width: 500px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    color: white;
+
+}
+
+.modal-content h2 {
+    color: white;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
 }
 
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #2c3e50;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
 }
 
 .form-group input,
 .form-group select {
     width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 0.75rem;
+    background-color: #3a3a3a;
+    border: 1px solid #4a4a4a;
+    border-radius: 10px;
     font-size: 1rem;
+    color: white;
+    transition: border-color 0.2s ease;
+}
+
+.form-group select option {
+    background-color: #2c2c2c;
+    color: white;
 }
 
 .modal-actions {
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
-    margin-top: 1.5rem;
+    margin-top: 2rem;
 }
 
 .confirm-btn,
 .cancel-btn {
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1.5rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
 .confirm-btn {
-    background-color: #3498db;
+    border-style: solid;
+    border-color: white;
+    border-width: 1px;
+    background-color: #2c2c2c;
     color: white;
 }
 
 .cancel-btn {
-    background-color: #e74c3c;
+    background-color: var(--primary-color);
     color: white;
 }
 
 .confirm-btn:hover {
-    background-color: #2980b9;
+    transform: translateY(-2px);
 }
 
 .cancel-btn:hover {
-    background-color: #c0392b;
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
 }
 
 .users-modal {
@@ -444,38 +479,47 @@ p {
 
 table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin: 1rem 0;
-}
-
-th,
-td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
+    background-color: #2c2c2c;
 }
 
 th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-    color: #2c3e50;
+    background-color: #3a3a3a;
+    color: white;
+    font-weight: 500;
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 2px solid #4a4a4a;
+}
+
+td {
+    padding: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid #4a4a4a;
 }
 
 tr:hover {
-    background-color: #f5f5f5;
+    background-color: #3a3a3a;
 }
 
 .home-link {
     display: block;
     text-align: center;
-    margin-top: 2rem;
-    color: #0d6efd;
+    padding: 1rem;
+    color: rgba(0, 0, 0, 0.8);
     text-decoration: none;
-    transition: color 0.2s ease;
+    background: #f1f1f1;
+    border-radius: 12px;
+    margin: 0 auto;
+    max-width: 200px;
+    margin-top: 30px;
+    transition: all 0.3s ease;
 }
 
 .home-link:hover {
-    color: #0a58ca;
+    transform: translateY(-2px);
 }
 
 /* SVG styles */
@@ -486,8 +530,60 @@ tr:hover {
 }
 
 @media (max-width: 768px) {
+    .admin-view {
+        padding: 4rem 1rem 1rem 1rem;
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        left: 0;
+    }
+
     .button-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .dashboard-card {
+        padding: 1rem;
+        aspect-ratio: 1;
+        max-width: 180px;
+        width: 100%;
+    }
+
+    .modal-content {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+
+    .users-modal {
+        padding: 1rem;
+    }
+
+    table {
+        font-size: 0.9rem;
+    }
+
+    th, td {
+        padding: 0.75rem;
+    }
+
+    .confirm-btn,
+    .cancel-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    h3 {
+        font-size: 1.2rem;
+    }
+
+    p {
+        font-size: 0.9rem;
+    }
+
+    .icon {
+        font-size: 2rem !important;
     }
 }
 </style>
