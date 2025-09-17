@@ -46,11 +46,12 @@ function toggleOrder(id) {
   shown.value = shown.value === id ? null : id;
 }
 
-function exportToExcel() {
+async function exportToExcel() {
   const mappedOrders = orders.value.map(order => ({
     ID: order.id,
     Totale: order.totalPrice + "€",
     Articoli: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
+    Data: new Date().toLocaleDateString('it-IT')
   }));
 
   const totalSum = orders.value.reduce((sum, order) => sum + order.totalPrice, 0);
@@ -70,8 +71,19 @@ function exportToExcel() {
   // downloadable file from browser (blob)
   const data = new Blob([excelBuffer], { type: "application/octet-stream" });
 
-  // download the file
+  // download the file locally
   saveAs(data, `orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
+
+  try {
+    await axios.post(`${import.meta.env.VITE_API_URL}/api/export-excel`, {
+      orders: orders.value
+    }, {
+      withCredentials: true
+    });
+    console.log('Excel file saved on server');
+  } catch (error) {
+    console.error('Error saving Excel on server:', error);
+  }
 }
 
 async function closeDay() {

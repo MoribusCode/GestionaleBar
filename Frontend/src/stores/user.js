@@ -18,7 +18,7 @@ export const useUserStore = defineStore('user', () => {
   // --- actions ---
   async function checkAuth() {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/check`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/check`, {
         withCredentials: true
       });
 
@@ -35,7 +35,7 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/login`, {
         username,
         password
       }, {
@@ -54,7 +54,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function logout() {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {}, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/logout`, {}, {
         withCredentials: true
       })
 

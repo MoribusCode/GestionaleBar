@@ -41,7 +41,7 @@ async function handleDeleteItem(id) {
         const confirmed = window.confirm('Are you sure you want to delete this item?');
         if (!confirmed) return;
 
-        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/admin/delete-item/${id}`,
+        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/api/delete-item/${id}`,
             { withCredentials: true }
         );
 
@@ -56,7 +56,7 @@ async function handleDeleteItem(id) {
 
 async function handleCreate() {
     try {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/create-user`, newUser.value,
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/create-user`, newUser.value,
             { withCredentials: true }
         );
         console.log('User created: ', res.data)
@@ -73,7 +73,7 @@ async function handleDelete(id) {
         const confirmed = window.confirm('Are you sure you want to delete this user?');
         if (!confirmed) return;
 
-        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/admin/delete-user/${id}`,
+        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/api/delete-user/${id}`,
             { withCredentials: true }
         );
 
@@ -91,7 +91,7 @@ async function handleDelete(id) {
 
 async function handleFetchUsers() {
     try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/users`,
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`,
             { withCredentials: true }
         );
         console.log('Users fetched successfully: ', res.data);
@@ -107,7 +107,7 @@ async function handleFetchUsers() {
 
 async function handleItems(n, p, c) {
     try {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/add-item`, {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/add-item`, {
             name: n,
             price: p,
             category: c

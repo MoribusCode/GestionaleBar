@@ -19,10 +19,8 @@ fastify.register(require("./plugins/cookie"));
 fastify.register(require("./plugins/jwt"));
 
 // Register routes 
-fastify.register(require("./routes/admin"), {prefix: "/admin"});
-fastify.register(require ("./routes/auth"), {prefix: "/auth"});
-
-// Register the API routes
+fastify.register(require("./routes/admin"), {prefix: "/api"});
+fastify.register(require ("./routes/auth"), {prefix: "/api"});
 fastify.register(require ("./router"), {prefix: "/api"});
 
 // Avvio manuale del server HTTP per poterlo usare con socket.io

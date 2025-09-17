@@ -3,6 +3,9 @@ module.exports = function (fastify, opts, done) {
     const db = require("./Database/database");
 
     const util = require("util");
+    const XLSX = require('xlsx');
+    const fs = require('fs');
+    const path = require('path');
 
     // Promisify DB methods
     const dbAll = util.promisify(db.all).bind(db);
@@ -241,6 +244,65 @@ module.exports = function (fastify, opts, done) {
         } catch (err) {
             console.error("Errore durante la chiusura della giornata:", err.message);
             return reply.status(500).send({ message: err.message });
+        }
+    });
+
+
+    fastify.post("/export-excel", async (request, reply) => {
+        try {
+            const { orders } = request.body;
+
+            if (!orders || !Array.isArray(orders)) {
+                return reply.status(400).send({ message: "Orders data is required" });
+            }
+
+            const mappedOrders = orders.map(order => ({
+                ID: order.id,
+                Totale: order.totalPrice,
+                Articoli: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
+                Data: new Date().toLocaleDateString('it-IT')
+            }));
+
+            const totalSum = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+
+            // Add empty row and total
+            mappedOrders.push({});
+            mappedOrders.push({
+                ID: 'Totale giornata',
+                TotalPrice: totalSum + "€",
+                Articoli: '',
+                Data: ''
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(mappedOrders);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+
+            // Create exports directory if it doesn't exist
+            const exportsDir = process.env.EXPORT_PATH || './exports';
+            if (!fs.existsSync(exportsDir)) {
+                fs.mkdirSync(exportsDir);
+            }
+
+            // Save file on server
+            const fileName = `orders_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            const filePath = path.join(exportsDir, fileName);
+
+            XLSX.writeFile(workbook, filePath);
+
+            return reply.send({
+                success: true,
+                message: 'Excel file saved successfully on server',
+                fileName: fileName,
+                filePath: filePath
+            });
+        } catch (error) {
+            console.error('Error saving Excel file:', error);
+            return reply.status(500).send({
+                success: false,
+                message: 'Error saving Excel file',
+                error: error.message
+            });
         }
     });
 

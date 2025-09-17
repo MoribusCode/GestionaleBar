@@ -66,7 +66,7 @@ const groupedItems = computed(() => {
 .category-block {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  
 }
 
 .category-title {
