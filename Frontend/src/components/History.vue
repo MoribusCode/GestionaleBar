@@ -3,6 +3,7 @@ import axios from 'axios';
 import { onMounted, ref } from 'vue';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { API_BASE_URL } from '@/store';
 
 let orders = ref([]);
 const shown = ref(null);
@@ -13,7 +14,7 @@ onMounted(() => {
 
 async function getOrders() {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/orders`);
+    const response = await axios.get(`${API_BASE_URL}/orders`);
     orders.value = response.data;
     console.log('Orders retrieved successfully', orders.value);
 
@@ -30,7 +31,7 @@ async function deleteOrder(id, event) {
   if (!confirmed) return;
 
   try {
-    const res = await axios.delete(`${import.meta.env.VITE_API_URL}/api/delete-order/${id}`);
+    const res = await axios.delete(`${API_BASE_URL}/delete-order/${id}`);
     if (res.status === 200) {
       orders.value = orders.value.filter(order => order.id !== id);
       if (shown.value === id) {
@@ -75,7 +76,7 @@ async function exportToExcel() {
   saveAs(data, `orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
 
   try {
-    await axios.post(`${import.meta.env.VITE_API_URL}/api/export-excel`, {
+    await axios.post(`${API_BASE_URL}/export-excel`, {
       orders: orders.value
     }, {
       withCredentials: true
@@ -98,7 +99,7 @@ async function closeDay() {
   try {
     exportToExcel();
 
-    const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/orders/close-day`);
+    const res = await axios.post(`${API_BASE_URL}/orders/close-day`);
 
     if (res.status === 200) {
       orders.value = [];

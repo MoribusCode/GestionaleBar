@@ -2,6 +2,7 @@
 import { ref, onMounted, defineProps } from 'vue';
 import { io } from 'socket.io-client';
 import axios from 'axios';
+import { API_BASE_URL, SOCKET_PATH, SOCKET_URL } from '@/store';
 
 const props = defineProps({
   category: {
@@ -15,7 +16,8 @@ const showConfirmDialog = ref(false);
 const orderToClose = ref(null);
 
 const orders = ref([]);
-const socket = io(`${import.meta.env.VITE_API_URL}`, {
+const socket = io(`${SOCKET_URL}`, {
+  path: SOCKET_PATH,
   withCredentials: true,
   transports: ['websocket', 'polling']
 });
@@ -26,7 +28,7 @@ function filterItemsByCategory(orderItems, category) {
 
 async function fetchPendingOrders() {
   try {
-    const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/orders/pending`);
+    const res = await axios.get(`${API_BASE_URL}/orders/pending`);
     res.data.forEach(order => {
       const filtered = filterItemsByCategory(order.items, props.category);
       if (filtered.length > 0) {
@@ -52,7 +54,7 @@ async function closeOrder(orderId, category) {
 async function handleConfirm() {
   try {
     // PUT corretto verso l'endpoint che funziona con il backend
-    const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/orders/${orderToClose.value.id}/category/${orderToClose.value.category}/close`);
+    const res = await axios.put(`${API_BASE_URL}/orders/${orderToClose.value.id}/category/${orderToClose.value.category}/close`);
 
     // Rimuovo solo se la risposta va a buon fine
     if (res.status === 200) {

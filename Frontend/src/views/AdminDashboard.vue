@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
+import { API_BASE_URL } from '@/store';
 
 // Import icons (you can use any SVG icons you prefer)
 const icons = {
@@ -26,7 +27,7 @@ const usersList = ref([]);
 
 async function handleFetchItems() {
     try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/items`,
+        const res = await axios.get(`${API_BASE_URL}/items`,
             { withCredentials: true }
         );
         itemsList.value = res.data.items;
@@ -41,7 +42,7 @@ async function handleDeleteItem(id) {
         const confirmed = window.confirm('Are you sure you want to delete this item?');
         if (!confirmed) return;
 
-        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/api/delete-item/${id}`,
+        const res = await axios.delete(`${API_BASE_URL}/delete-item/${id}`,
             { withCredentials: true }
         );
 
@@ -56,7 +57,7 @@ async function handleDeleteItem(id) {
 
 async function handleCreate() {
     try {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/create-user`, newUser.value,
+        const res = await axios.post(`${API_BASE_URL}/create-user`, newUser.value,
             { withCredentials: true }
         );
         console.log('User created: ', res.data)
@@ -73,7 +74,7 @@ async function handleDelete(id) {
         const confirmed = window.confirm('Are you sure you want to delete this user?');
         if (!confirmed) return;
 
-        const res = await axios.delete(`${import.meta.env.VITE_API_URL}/api/delete-user/${id}`,
+        const res = await axios.delete(`${API_BASE_URL}/delete-user/${id}`,
             { withCredentials: true }
         );
 
@@ -91,7 +92,7 @@ async function handleDelete(id) {
 
 async function handleFetchUsers() {
     try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`,
+        const res = await axios.get(`${API_BASE_URL}/users`,
             { withCredentials: true }
         );
         console.log('Users fetched successfully: ', res.data);
@@ -107,7 +108,7 @@ async function handleFetchUsers() {
 
 async function handleItems(n, p, c) {
     try {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/add-item`, {
+        const res = await axios.post(`${API_BASE_URL}/add-item`, {
             name: n,
             price: p,
             category: c

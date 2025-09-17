@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { API_BASE_URL } from '@/store';
 
 
 export const useUserStore = defineStore('user', () => {
@@ -18,7 +19,7 @@ export const useUserStore = defineStore('user', () => {
   // --- actions ---
   async function checkAuth() {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/check`, {
+      const response = await axios.get(`${API_BASE_URL}/check`, {
         withCredentials: true
       });
 
@@ -35,7 +36,7 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/login`, {
+      const response = await axios.post(`${API_BASE_URL}/login`, {
         username,
         password
       }, {
@@ -54,7 +55,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function logout() {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/logout`, {}, {
+      const response = await axios.post(`${API_BASE_URL}/logout`, {}, {
         withCredentials: true
       })
 

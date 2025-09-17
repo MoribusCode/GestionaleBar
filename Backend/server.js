@@ -36,6 +36,7 @@ const start = async () => {
 
     // Attacco socket.io al server HTTP interno di Fastify
     const io = new Server(fastify.server, {
+      path: "/api/socket.io",
       cors: {
         origin: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

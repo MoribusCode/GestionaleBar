@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { ref, watch, onUnmounted } from 'vue';
 import { addedToOrder } from '@/store.js';
+import { API_BASE_URL } from '@/store';
 
 // Emit logic to store the list order
 const emit = defineEmits(['orderStored'])
@@ -13,7 +14,7 @@ const showConfirmation = ref(false);
 async function storeOrder() {
   try {
     //send the order to the backend
-    const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/orders`, {
+    const response = await axios.post(`${API_BASE_URL}/orders`, {
       order: list.value,
       totalPrice: totalPrice(),
       note: orderNote.value
