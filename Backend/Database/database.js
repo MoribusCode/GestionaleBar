@@ -5,7 +5,7 @@ const path = require("path");
 console.log('Connessione al database...');
 
 // Percorso al file .db nella stessa cartella
-const dbPath = path.join(__dirname, "bar.db");
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'bar.db');
 const db = new sqlite3.Database(dbPath);
 
 // Crea le tabelle se non esistono
