@@ -213,10 +213,10 @@ async function handleItems(n, p, c) {
                     <select v-model="newUser.role" required>
                         <option value="admin">Admin</option>
                         <option value="cashier">Cassa</option>
-                        <option value="food">Cibo</option>
-                        <option value="beer">Spina</option>
-                        <option value="bar">Bar</option>
-                        <option value="drink">Drinks</option>
+                        <option value="Cicchetti">Cicchetti</option>
+                        <option value="Spina">Spina</option>
+                        <option value="Bar">Bar</option>
+                        <option value="Drinks">Drinks</option>
                     </select>
                 </div>
                 <div class="modal-actions">
@@ -283,10 +283,10 @@ async function handleItems(n, p, c) {
                 <div class="form-group">
                     <label>Categoria:</label>
                     <select v-model="newItem.category" required>
-                        <option value="food">Cicchetti</option>
-                        <option value="beer">Spina</option>
-                        <option value="bar">Bar</option>
-                        <option value="drink">Drinks</option>
+                        <option value="Cicchetti">Cicchetti</option>
+                        <option value="Spina">Spina</option>
+                        <option value="Bar">Bar</option>
+                        <option value="Drinks">Drinks</option>
                     </select>
                 </div>
                 <div class="modal-actions">

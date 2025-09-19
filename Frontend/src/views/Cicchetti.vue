@@ -1,7 +1,7 @@
 <script setup>
 import Workstation from '@/components/Workstation.vue';
 
-const category = "cibo";
+const category = "Cicchetti";
 
 </script>
 

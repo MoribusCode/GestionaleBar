@@ -55,31 +55,6 @@ db.serialize(() => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
-  //sta roba è provvisoria per aggiungere gli articoli di prova a 'items' intanto che è vuota, intanto ignora
-  db.get('SELECT COUNT(*) AS count FROM items', (err, row) => {
-    if (err) {
-      console.error('Errore nel controllo count items:', err.message);
-      return;
-    }
-
-    if (row.count === 0) {
-
-      const insert = db.prepare('INSERT INTO items (name, price, category) VALUES (?, ?, ?)');
-  
-      insert.run('Birra', 5.00, 'Spina');
-      insert.run('Aperol', 3.00, 'Drink');
-      insert.run('Cicchetti', 4.00, 'Cibo');
-      insert.run('Gin Tonic', 7.00, 'Drink');
-
-      insert.finalize(() => {
-        console.log("Articoli iniziali inseriti nel DB.");
-      });
-
-    } else {
-      console.log("Articoli già presenti nel DB.");
-    }
-  });
 });
 
 module.exports = db;

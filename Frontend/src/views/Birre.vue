@@ -1,7 +1,7 @@
 <script setup>
 import Workstation from '@/components/Workstation.vue';
 
-const category = "spina";
+const category = "Spina";
 
 </script>
 

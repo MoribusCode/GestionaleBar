@@ -1,7 +1,7 @@
 <script setup>
 import Workstation from '@/components/Workstation.vue';
 
-const category = "drink";
+const category = "Drinks";
 
 </script>
 

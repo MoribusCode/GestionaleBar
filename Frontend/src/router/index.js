@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { BASE_URL } from '@/store';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -41,7 +40,7 @@ const router = createRouter({
       component: () => import('@/views/HistoryView.vue'),
       meta: { 
         requiresAuth: true,
-        roles: ['admin', 'cashier', 'food', 'beer', 'drink', 'bar']
+        roles: ['admin', 'cashier', 'Cicchetti', 'Spina', 'Drinks', 'Bar']
 
       }
     },
@@ -51,7 +50,7 @@ const router = createRouter({
       component: () => import('@/views/Cicchetti.vue'),
       meta: {
         requiresAuth: true,
-        roles: ['food']
+        roles: ['Cicchetti']
       }
 
     },
@@ -61,7 +60,7 @@ const router = createRouter({
       component: () => import('@/views/Birre.vue'),
       meta: {
         requiresAuth: true,
-        roles: ['beer']
+        roles: ['Spina']
       }
     },
     {
@@ -70,7 +69,7 @@ const router = createRouter({
       component: () => import('@/views/Bar.vue'),
       meta: {
         requiresAuth: true,
-        roles: ['bar']
+        roles: ['Bar']
       }
     },
     {
@@ -79,7 +78,7 @@ const router = createRouter({
       component: () => import('@/views/Drinks.vue'),
       meta: {
         requiresAuth: true,
-        roles: ['drink']
+        roles: ['Drinks']
       }
     }
   ]
