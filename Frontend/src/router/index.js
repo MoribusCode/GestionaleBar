@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { BASE_URL } from '@/store';
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(),
 
   routes: [
     {
@@ -61,6 +62,15 @@ const router = createRouter({
       meta: {
         requiresAuth: true,
         roles: ['beer']
+      }
+    },
+    {
+      path: '/bar',
+      name: 'bar',
+      component: () => import('@/views/Bar.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['bar']
       }
     },
     {

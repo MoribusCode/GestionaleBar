@@ -285,7 +285,7 @@ module.exports = function (fastify, opts, done) {
             }
 
             // Save file on server
-            const fileName = `orders_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            const fileName = `orders_${getFileTimestamp}.xlsx`;
             const filePath = path.join(exportsDir, fileName);
 
             XLSX.writeFile(workbook, filePath);
@@ -305,6 +305,19 @@ module.exports = function (fastify, opts, done) {
             });
         }
     });
+
+    // funzione ausiliaria per calcolare il timestamp
+
+    function getFileTimestamp(date = new Date()) {
+        const anno = date.getFullYear();
+        const mese = String(date.getMonth() + 1).padStart(2, "0"); // mesi 0-11
+        const giorno = String(date.getDate()).padStart(2, "0");
+        const ore = String(date.getHours()).padStart(2, "0");
+        const minuti = String(date.getMinutes()).padStart(2, "0");
+
+        // Formato: YYYY-MM-DD_HH-MM
+        return `${ anno }-${ mese }-${ giorno }-${ ore }-${ minuti }`;
+    }
 
     done();
 }

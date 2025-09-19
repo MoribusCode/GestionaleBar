@@ -7,8 +7,9 @@ const isAdmin = () => userStore.user?.role === 'admin';
 const isCashier = () => userStore.user?.role === 'cashier';
 const isFood = () => userStore.user?.role === 'food';
 const isBeer = () => userStore.user?.role === 'beer';
+const isBar = () => userStore.user?.role === 'bar';
 const isDrink = () => userStore.user?.role === 'drink';
-const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(userStore.user?.role);
+const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink', 'bar'].includes(userStore.user?.role);
 </script>
 
 <template>
@@ -42,6 +43,12 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink'].includes(use
         <i class="fa-solid fa-beer-mug-empty" style="font-size: 2.5rem; color: white;"></i>
         <h2>Spina</h2>
         <span class="card-description">Gestione spina</span>
+      </router-link>
+
+      <router-link v-if="isBar()" to="/drinks" class="menu-card drinks">
+        <i class="fa-solid fa-mug-hot" style="font-size: 2.5rem; color: white;"></i>
+        <h2>Bar</h2>
+        <span class="card-description">Gestione bar</span>
       </router-link>
 
       <router-link v-if="isDrink()" to="/drinks" class="menu-card drinks">

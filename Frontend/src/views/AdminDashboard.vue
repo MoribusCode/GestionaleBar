@@ -215,6 +215,7 @@ async function handleItems(n, p, c) {
                         <option value="cashier">Cassa</option>
                         <option value="food">Cibo</option>
                         <option value="beer">Spina</option>
+                        <option value="bar">Bar</option>
                         <option value="drink">Drinks</option>
                     </select>
                 </div>
@@ -226,7 +227,7 @@ async function handleItems(n, p, c) {
         </div>
     </div>
 
-    <!-- Add new Items List Modal -->
+    <!-- Items List Modal -->
     <div v-if="showItemsModal" class="modal-overlay">
         <div class="modal-content users-modal">
             <h2>Lista Articoli</h2>
@@ -281,7 +282,12 @@ async function handleItems(n, p, c) {
                 </div>
                 <div class="form-group">
                     <label>Categoria:</label>
-                    <input v-model="newItem.category" type="text" required>
+                    <select v-model="newUser.role" required>
+                        <option value="food">Cicchetti</option>
+                        <option value="beer">Spina</option>
+                        <option value="bar">Bar</option>
+                        <option value="drink">Drinks</option>
+                    </select>
                 </div>
                 <div class="modal-actions">
                     <button type="submit" class="confirm-btn">Aggiungi</button>
