@@ -45,7 +45,7 @@ const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink', 'bar'].inclu
         <span class="card-description">Gestione spina</span>
       </router-link>
 
-      <router-link v-if="isBar()" to="/drinks" class="menu-card drinks">
+      <router-link v-if="isBar()" to="/bar" class="menu-card drinks">
         <i class="fa-solid fa-mug-hot" style="font-size: 2.5rem; color: white;"></i>
         <h2>Bar</h2>
         <span class="card-description">Gestione bar</span>

@@ -1,3 +1,5 @@
+const { timeStamp } = require("console");
+
 module.exports = function (fastify, opts, done) {
 
     const db = require("./Database/database");
@@ -285,7 +287,8 @@ module.exports = function (fastify, opts, done) {
             }
 
             // Save file on server
-            const fileName = `orders_${getFileTimestamp}.xlsx`;
+            const timeStamp = getFileTimestamp();
+            const fileName = `orders_${timeStamp}.xlsx`;
             const filePath = path.join(exportsDir, fileName);
 
             XLSX.writeFile(workbook, filePath);
@@ -316,7 +319,7 @@ module.exports = function (fastify, opts, done) {
         const minuti = String(date.getMinutes()).padStart(2, "0");
 
         // Formato: YYYY-MM-DD_HH-MM
-        return `${ anno }-${ mese }-${ giorno }-${ ore }-${ minuti }`;
+        return `${anno}-${mese}-${giorno}_${ore}-${minuti}`;
     }
 
     done();

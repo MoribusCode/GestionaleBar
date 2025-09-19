@@ -282,7 +282,7 @@ async function handleItems(n, p, c) {
                 </div>
                 <div class="form-group">
                     <label>Categoria:</label>
-                    <select v-model="newUser.role" required>
+                    <select v-model="newItem.category" required>
                         <option value="food">Cicchetti</option>
                         <option value="beer">Spina</option>
                         <option value="bar">Bar</option>

@@ -41,7 +41,7 @@ const router = createRouter({
       component: () => import('@/views/HistoryView.vue'),
       meta: { 
         requiresAuth: true,
-        roles: ['admin', 'cashier', 'food', 'beer', 'drink']
+        roles: ['admin', 'cashier', 'food', 'beer', 'drink', 'bar']
 
       }
     },
