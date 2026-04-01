@@ -25,7 +25,7 @@ async function storeOrder() {
 
     setTimeout(() => {
       showConfirmation.value = false;
-    }, 3000);
+    }, 5000);
 
     //clear the order list after storing
     clean();

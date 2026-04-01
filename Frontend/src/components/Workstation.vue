@@ -11,16 +11,25 @@ const props = defineProps({
   }
 });
 
-// variables for managing the confirmation dialog
-const showConfirmDialog = ref(false);
-const orderToClose = ref(null);
-
 const orders = ref([]);
+
+// Socket.io SETUP
 const socket = io(`${SOCKET_URL}`, {
   path: SOCKET_PATH,
   withCredentials: true,
-  transports: ['websocket', 'polling']
+  transports: ['websocket', 'polling'],
+  
+  // recconnect options
+  reconnection: true,
 });
+
+socket.on('reconnect', () => {
+  fetchPendingOrders(); // quando fa il reconnect, faccio un fetch per aggiornare la lista degli ordini
+});
+
+// variables for managing the confirmation dialog
+const showConfirmDialog = ref(false);
+const orderToClose = ref(null);
 
 function filterItemsByCategory(orderItems, category) {
   return orderItems.filter(item => item.category.toLowerCase() === category.toLowerCase());
@@ -29,16 +38,24 @@ function filterItemsByCategory(orderItems, category) {
 async function fetchPendingOrders() {
   try {
     const res = await axios.get(`${API_BASE_URL}/orders/pending`);
+
+    // creo una nuova lista in modo da non avere duplicati se chiamo di nuovo il fetch
+    const newOrders = [];
+    
     res.data.forEach(order => {
       const filtered = filterItemsByCategory(order.items, props.category);
       if (filtered.length > 0) {
-        orders.value.push({
+        newOrders.push({
           id: order.id,
           items: filtered,
           note: order.note
         });
       }
     });
+ 
+    // aggiorno la lista degli ordini
+    orders.value = newOrders;
+
   } catch (err) {
     console.error("Errore nel recupero ordini in attesa:", err);
   }

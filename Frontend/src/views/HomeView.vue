@@ -5,11 +5,11 @@ const userStore = useUserStore();
 
 const isAdmin = () => userStore.user?.role === 'admin';
 const isCashier = () => userStore.user?.role === 'cashier';
-const isFood = () => userStore.user?.role === 'food';
-const isBeer = () => userStore.user?.role === 'beer';
-const isBar = () => userStore.user?.role === 'bar';
-const isDrink = () => userStore.user?.role === 'drink';
-const isStaff = () => ['admin', 'cashier', 'food', 'beer', 'drink', 'bar'].includes(userStore.user?.role);
+const isFood = () => userStore.user?.role === 'Cicchetti';
+const isBeer = () => userStore.user?.role === 'Spina';
+const isBar = () => userStore.user?.role === 'Bar';
+const isDrink = () => userStore.user?.role === 'Drinks';
+const isStaff = () => ['admin', 'cashier', 'Cicchetti', 'Spina', 'Drinks', 'Bar'].includes(userStore.user?.role);
 </script>
 
 <template>

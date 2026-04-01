@@ -4,6 +4,7 @@
     "@fastify/jwt": "^10.0.0",
     "@fastify/cookie": "^11.0.2",
     "socket.io": "^4.8.1",
+    "@socket.io/admin-ui": "^0.5.1",
     "sqlite3": "^5.1.7",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

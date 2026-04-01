@@ -3,6 +3,7 @@ require("dotenv").config();
 const fastify = require("fastify") ({ logger: true });
 const cors = require("@fastify/cors");
 const { Server } = require("socket.io");  // socket.io server class
+const { instrument } = require("@socket.io/admin-ui"); // Admin UI per monitorare le connessioni al socket
 
 // Enable CORS (so the frontend can communicate with the backend)
 fastify.register (cors, {
@@ -38,7 +39,7 @@ const start = async () => {
     const io = new Server(fastify.server, {
       path: "/api/socket.io",
       cors: {
-        origin: true,
+        origin: [ process.env.FRONTEND_URL, "https://admin.socket.io" ], // Permetto anche l'origine dell'admin UI 
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         credentials: true, // Allow cookies to be sent with requests
         transports: ['websocket', 'polling']
@@ -48,11 +49,21 @@ const start = async () => {
     // Salvo l'istanza socket.io dentro fastify per poterla usare in router.js (Così si possono chiamare i vari eventi)
     fastify.io = io;
 
+    // admin UI config per monitorare le connessioni al socket
+    instrument(io, {
+      auth: {
+        type: "basic",
+        username: "admin", 
+        password: "adminsocket" 
+      },
+      mode: "production",
+    });
+
     io.on("connection", (socket) => {
       console.log("Nuovo client connesso", socket.id);
 
-      socket.on("disconnect", () => {
-        console.log("Client disconnesso", socket.id);
+      socket.on("disconnect", (reason) => {
+        console.log("Client disconnesso, motivo:", reason);
       });
     });
 
