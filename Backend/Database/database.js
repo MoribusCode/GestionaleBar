@@ -17,12 +17,16 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL,
       price REAL NOT NULL,
-      category TEXT
+      category TEXT,
+      note TEXT,
+      minimum_stock INTEGER NOT NULL DEFAULT 0,
+      practical_unit TEXT NOT NULL,    -- unità di misura (es. pezzi, confezioni, bottiglie etc.)
+      item_sale BOOLEAN DEFAULT 0,     -- flag per item in vendita
+      item_purchase BOOLEAN DEFAULT 0  -- flag per item da acquistare (in inventario)
     )
   `);
 
   // Tabella ordini (orders), per ora la togliamo
-
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       order_id INTEGER PRIMARY KEY,
@@ -33,7 +37,7 @@ db.serialize(() => {
     )
   `);
 
-  // Tabella dettaglio ordini(orders-items)
+  // Tabella dettaglio ordini (orders-items)
   db.run(`
     CREATE TABLE IF NOT EXISTS order_items (
       id INTEGER PRIMARY KEY,
@@ -53,6 +57,26 @@ db.serialize(() => {
       password TEXT NOT NULL,
       role TEXT DEFAULT 'user',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Tabella inventartio (inventory)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS inventory (
+      item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_name TEXT NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 0,
+    )
+  `);
+
+  // Tabella transazioni (transactions)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS transactions (
+      transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      amount DECIMAL(10,2) NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('IN', 'OUT')),
+      description TEXT
     )
   `);
 });

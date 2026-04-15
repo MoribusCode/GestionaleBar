@@ -57,37 +57,5 @@ module.exports = function (fastify, opts, done) {
             }
         });
 
-    // endpoint per aggiungere un articolo alle voci 
-    fastify.post('/add-item',
-        { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
-
-            try {
-                const { name, price, category } = request.body;
-
-                const item = await dbRun('INSERT INTO items (name, price, category) VALUES (?, ?, ?)',
-                    [name, price, category]
-                );
-
-                reply.code(201).send("articolo creato: ", item);
-
-            } catch (err) {
-                reply.code(500).send({ error: 'Internal Server Error' });
-            }
-        });
-
-    fastify.delete('/delete-item/:id',
-        { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
-
-            try {
-                const { id } = request.params;
-                await dbRun('DELETE FROM items WHERE id = ?',
-                    [id]
-                );
-
-            } catch (err) {
-                reply.code(500).send({ error: 'Internal Server Error' });
-            }
-        });
-
     done();
 };

@@ -22,7 +22,10 @@ fastify.register(require("./plugins/jwt"));
 // Register routes 
 fastify.register(require("./routes/admin"), {prefix: "/api"});
 fastify.register(require ("./routes/auth"), {prefix: "/api"});
-fastify.register(require ("./router"), {prefix: "/api"});
+fastify.register(require ("./routes/items"), {prefix: "/api"});
+fastify.register(require ("./routes/orders"), {prefix: "/api"});
+fastify.register(require ("./routes/transactions"), {prefix: "/api"});
+fastify.register(require ("./routes/inventory"), {prefix: "/api"});
 
 // Avvio manuale del server HTTP per poterlo usare con socket.io
 const start = async () => {
@@ -37,7 +40,7 @@ const start = async () => {
 
     // Attacco socket.io al server HTTP interno di Fastify
     const io = new Server(fastify.server, {
-      path: "/api/socket.io",
+      path: "/api/socket.io/",
       cors: {
         origin: [ process.env.FRONTEND_URL, "https://admin.socket.io" ], // Permetto anche l'origine dell'admin UI 
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

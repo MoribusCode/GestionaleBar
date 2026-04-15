@@ -2,7 +2,7 @@ const { timeStamp } = require("console");
 
 module.exports = function (fastify, opts, done) {
 
-    const db = require("./Database/database");
+    const db = require("../Database/database");
 
     const util = require("util");
     const XLSX = require('xlsx');
@@ -78,7 +78,9 @@ module.exports = function (fastify, opts, done) {
                     quantity: row.quantity,
                     category: row.category
                 });
+
                 return acc;
+
             }, {});
 
             return Object.values(grouped);
@@ -87,14 +89,13 @@ module.exports = function (fastify, opts, done) {
         }
     });
 
-
     // GET all items (retrieve catalog)
     fastify.get("/items", async (request, reply) => {
         try {
             const items = await dbAll("SELECT * FROM items");
             return { items };
+            
         } catch (err) {
-
             console.error("Errore durante il recupero degli articoli:", err.message);
             return reply.status(500).send({ error: "Errore nel database" });
         }
@@ -250,6 +251,7 @@ module.exports = function (fastify, opts, done) {
     });
 
 
+    // POST - esporta in excel tutte le comande
     fastify.post("/export-excel", async (request, reply) => {
         try {
             const { orders } = request.body;
@@ -310,7 +312,6 @@ module.exports = function (fastify, opts, done) {
     });
 
     // funzione ausiliaria per calcolare il timestamp
-
     function getFileTimestamp(date = new Date()) {
         const anno = date.getFullYear();
         const mese = String(date.getMonth() + 1).padStart(2, "0"); // mesi 0-11
