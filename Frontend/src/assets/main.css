@@ -1,34 +1,12 @@
 @import url('https://fonts.cdnfonts.com/css/helvetica-neue-5');
+@import "tailwindcss";
+@layer tailwind-base, primevue, tailwind-utilities;
 
-html, 
-body {
-  font-family: "Helvetica Neue", "Arial", sans-serif;
+@theme {
+  --font-sans: "Helvetica Neue", "Arial", sans-serif;
+}
+
+html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-optical-sizing: 125%;
-  background-color: var(--background-color);
-  margin: 0;
-  min-height: 100vh;
-  
-  min-width: 100%;
-  padding: 0;
-}
-
-* {
-  font-family: 'Helvetica Neue', 'Arial', sans-serif;
-  font-optical-sizing: 125%;
-}
-
-#app {
-  min-height: 100vh;
-  background-color: var(--background-color);
-}
-
-:root {
-  --primary-color: #fb4d2e;   
-  --primary-hover: #e04327;  
-  --secondary-color: #4d4d4d;
-  --secondary-hover: #3a3a3a;
-  --background-color: #d9d9d9;  
-  --error-color: #ff4444;       
 }

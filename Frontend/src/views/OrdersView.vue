@@ -9,7 +9,7 @@ const catalog = ref([]);
 
 onMounted(async () => {
   try {
-    const res = await axios.get(`${API_BASE_URL}/items`);
+    const res = await axios.get(`${API_BASE_URL}/get-items-catalog`);
 
     // fill the catalog with the data received from the backend
     catalog.value = res.data.items;

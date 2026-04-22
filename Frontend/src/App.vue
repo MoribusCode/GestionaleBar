@@ -1,20 +1,30 @@
 <script setup>
 import { ref, provide, computed } from 'vue';
 import { RouterView, useRoute } from 'vue-router'
+import Navbar from '@/components/Navbar.vue';
 import Sidebar from '@/components/Sidebar.vue'
 
 const route = useRoute();
 
+/*
 const isSidebarCollapsed = ref(false);
 provide('sidebarState', isSidebarCollapsed);
+*/
 
-const showSidebar = computed(() => {
-  // Hide sidebar on login pages
-  return route.name !== 'login';
-});
+const showMenubar = computed(() => route.name !== 'login');
+
 </script>
 
 <template>
+
+  <div class="min-h-screen bg-slate-100 font-sans text-slate-900">
+    <Navbar v-if="showMenubar" />
+
+    <main class="container mx-auto p-6">
+      <router-view />
+    </main>
+  </div>
+<!-- 
     <div class="app-container">
         <Sidebar
         v-if="showSidebar"
@@ -30,9 +40,13 @@ const showSidebar = computed(() => {
           <RouterView />
         </main>
     </div>
-</template>
+
+  -->
+</template> 
+
 
 <style scoped>
+
 .app-container {
   display: flex;
   min-height: 100vh;

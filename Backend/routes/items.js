@@ -7,9 +7,21 @@ const dbAll = util.promisify(db.all).bind(db);
 module.exports = function (fastify, opts, done) {
 
     // GET - endpoint per fetchare tutti gli item dal db
-    fastify.get("/items", async (request, reply) => {
+    fastify.get("/get-items", async (request, reply) => {
         try {
             const items = await dbAll("SELECT * FROM items");
+            return { items };
+            
+        } catch (err) {
+            console.error("Errore durante il recupero degli articoli:", err.message);
+            return reply.status(500).send({ error: err.message });
+        }
+    });
+
+    // GET - endpoint per fetchare tutti gli item dal db nel catalogo (solo quelli in vendita)
+    fastify.get("/get-items-catalog", async (request, reply) => {
+        try {
+            const items = await dbAll("SELECT * FROM items where item_sale = 1");
             return { items };
             
         } catch (err) {
@@ -26,7 +38,7 @@ module.exports = function (fastify, opts, done) {
 
             const item = await dbRun(`INSERT INTO items 
                 (name, price, category, note, minimum_stock, practical_unit, item_sale, item_purchase) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)'`,
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [name, price, category, note, min_stock, practical_unit, flag_sale, flag_purchase]
             );
 
@@ -59,7 +71,7 @@ module.exports = function (fastify, opts, done) {
             const updateFields = [];
             const values = [];
 
-            for ( const [key, value] of Object.entries(data) ) {
+            for (const [key, value] of Object.entries(data)) {
                 
                 if (fieldMap[key] && value !== undefined ) {
                     updateFields.push(`${fieldMap[key]} = ?`),
@@ -81,7 +93,7 @@ module.exports = function (fastify, opts, done) {
             reply.code(200).send({ message: "Articolo aggiornato con successo" });
 
         } catch (err) {
-            console.error("ERRORE CRUD /update-item:", err);
+            console.error("ERRORE CRUD /update-item: ", err);
             reply.code(500).send({ message: err.message });
         }
     });

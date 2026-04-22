@@ -6,7 +6,7 @@ const dbAll = util.promisify(db.all).bind(db);
 
 module.exports = function (fastify, opts, done) {
 
-    // endpoint per fare un fetch degli articoli flaggati come item_purchase (in inventario)
+    // GET - endpoint per fare un fetch degli articoli flaggati come item_purchase (in inventario)
     fastify.get('/purchase-items', async (request, reply) => {
         try {
             const items = await dbAll('SELECT * FROM items WHERE item_purchase = 1');
@@ -17,7 +17,7 @@ module.exports = function (fastify, opts, done) {
     });
 
 
-    // endpoint per fare un fetch degli articoli flaggati come item_sale (in vendita)
+    // GET - endpoint per fare un fetch degli articoli flaggati come item_sale (in vendita)
     fastify.get('/sale-items', async (request, reply) => {
         try {
             const items = await dbAll('SELECT * FROM items WHERE item_sale = 1');

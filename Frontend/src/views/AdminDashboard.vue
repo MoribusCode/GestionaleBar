@@ -27,7 +27,7 @@ const usersList = ref([]);
 
 async function handleFetchItems() {
     try {
-        const res = await axios.get(`${API_BASE_URL}/items`,
+        const res = await axios.get(`${API_BASE_URL}/get-items`,
             { withCredentials: true }
         );
         itemsList.value = res.data.items;
@@ -132,7 +132,7 @@ async function handleItems(n, p, c) {
                 <div class="dashboard-card" @click="handleFetchUsers">
                     <div class="icon" v-html="icons.viewUsers"></div>
                     <h3>Utenti</h3>
-                    <p>Visualizza tutti gli utetnti del sistema</p>
+                    <p>Visualizza tutti gli utenti del sistema</p>
                 </div>
 
                 <div class="dashboard-card" @click="showCreateUserModal = true">
@@ -147,11 +147,11 @@ async function handleItems(n, p, c) {
                     <p>Visualizza e gestisci tutti gli articoli nell'inventario</p>
                 </div>
 
-                <div class="dashboard-card" @click="showAddItemModal = true">
+                <router-link to="/items-management" class="dashboard-card">
                     <div class="icon" v-html="icons.addItem"></div>
-                    <h3>Aggiungi Articolo</h3>
-                    <p>Aggiungi un nuovo articolo all'inventario</p>
-                </div>
+                    <h3>Gestione Articoli</h3>
+                    <p>Crea, modifica e gestisci gli articoli</p>
+                </router-link>
             </div>
         </div>
 

@@ -89,18 +89,6 @@ module.exports = function (fastify, opts, done) {
         }
     });
 
-    // GET all items (retrieve catalog)
-    fastify.get("/items", async (request, reply) => {
-        try {
-            const items = await dbAll("SELECT * FROM items");
-            return { items };
-            
-        } catch (err) {
-            console.error("Errore durante il recupero degli articoli:", err.message);
-            return reply.status(500).send({ error: "Errore nel database" });
-        }
-    });
-
     // POST a new order
     fastify.post("/orders", async (request, reply) => {
 

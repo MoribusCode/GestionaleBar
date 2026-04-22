@@ -12,10 +12,13 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@primeuix/themes": "^2.0.3",
+    "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.11.0",
-    "bootstrap": "^5.3.7",
     "file-saver": "^2.0.5",
     "pinia": "^3.0.3",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.5",
     "serve": "^14.2.5",
     "socket.io-client": "^4.8.1",
     "vue": "^3.5.13",
@@ -27,9 +30,12 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",
     "@vue/eslint-config-prettier": "^10.2.0",
+    "autoprefixer": "^10.5.0",
     "eslint": "^9.21.0",
     "eslint-plugin-vue": "~10.0.0",
     "globals": "^16.0.0",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^4.2.2",
     "vite": "^6.2.1",
     "vite-plugin-vue-devtools": "^7.7.2"
   }

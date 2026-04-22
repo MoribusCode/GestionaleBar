@@ -41,7 +41,6 @@ const router = createRouter({
       meta: { 
         requiresAuth: true,
         roles: ['admin', 'cashier', 'Cicchetti', 'Spina', 'Drinks', 'Bar']
-
       }
     },
     {
@@ -52,7 +51,6 @@ const router = createRouter({
         requiresAuth: true,
         roles: ['Cicchetti']
       }
-
     },
     {
       path: '/birre',
@@ -79,6 +77,15 @@ const router = createRouter({
       meta: {
         requiresAuth: true,
         roles: ['Drinks']
+      }
+    },
+    {
+      path: '/items-management',
+      name: 'items-management',
+      component: () => import('@/views/ItemsManagement.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['admin']
       }
     }
   ]
