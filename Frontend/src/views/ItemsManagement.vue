@@ -160,9 +160,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="m-4 flex flex-col bg-slate-50 rounded-3xl shadow-sm border border-slate-200">
+  <div class="m-4 flex flex-col bg-slate-50 rounded-3xl border-2 border-slate-200">
     <!-- Header -->
-    <div class="bg-white border-b border-slate-200 px-8 py-6 sticky top-0 z-40 rounded-t-3xl overflow-hidden">
+    <div class="bg-white border-b border-slate-200 px-8 py-6 top-0 z-40 rounded-t-3xl overflow-hidden">
       <div class="flex items-center justify-between max-w-7xl mx-auto">
         <div>
           <h1 class="text-4xl font-bold text-slate-800">Gestione Articoli</h1>
@@ -181,7 +181,7 @@ onMounted(() => {
     <div class="px-8 py-8">
       <div class="max-w-7xl mx-auto">
         <!-- Items Table -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
           <DataTable
             :value="items"
             :loading="loading"

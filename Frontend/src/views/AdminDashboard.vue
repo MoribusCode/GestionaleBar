@@ -2,595 +2,329 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { API_BASE_URL } from '@/store';
-
-// Import icons (you can use any SVG icons you prefer)
-const icons = {
-    viewUsers: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
-    createUser: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>`,
-    viewItems: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>`,
-    addItem: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>`
-}
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
 
 // Modal states
-const showUsersModal = ref(false);
+const showUsersModal    = ref(false);
 const showCreateUserModal = ref(false);
-const showItemsModal = ref(false);
-const showAddItemModal = ref(false);
-
+const showDeleteConfirmDialog = ref(false);
+const userToDeleteId = ref(null);
 
 // Form data
-const newUser = ref({ username: '', password: '', role: '' });
-const itemsList = ref([]);
-const newItem = ref({ name: '', price: '', category: '' });
-const usersList = ref([]);
+const newUser    = ref({ username: '', password: '', role: '' });
+const usersList  = ref([]);
+const createUserSuccessMessage = ref('');
 
-
-async function handleFetchItems() {
-    try {
-        const res = await axios.get(`${API_BASE_URL}/get-items`,
-            { withCredentials: true }
-        );
-        itemsList.value = res.data.items;
-        showItemsModal.value = true;
-    } catch (error) {
-        console.error('Error fetching items: ', error);
-    }
-}
-
-async function handleDeleteItem(id) {
-    try {
-        const confirmed = window.confirm('Are you sure you want to delete this item?');
-        if (!confirmed) return;
-
-        const res = await axios.delete(`${API_BASE_URL}/delete-item/${id}`,
-            { withCredentials: true }
-        );
-
-        if (res.status === 200) {
-            itemsList.value = itemsList.value.filter(item => item.id !== id);
-            console.log('Item deleted successfully');
-        }
-    } catch (error) {
-        console.error('Error deleting item: ', error);
-    }
-}
+const availableRoles = [
+    { value: 'admin', label: 'Admin' },
+    { value: 'cashier', label: 'Cashier' },
+    { value: 'Cicchetti', label: 'Cicchetti' },
+    { value: 'Spina', label: 'Spina' },
+    { value: 'Bar', label: 'Bar' },
+    { value: 'Drinks', label: 'Drinks' }
+];
 
 async function handleCreate() {
     try {
-        const res = await axios.post(`${API_BASE_URL}/create-user`, newUser.value,
-            { withCredentials: true }
-        );
-        console.log('User created: ', res.data)
+        await axios.post(`${API_BASE_URL}/create-user`, newUser.value, { withCredentials: true });
         showCreateUserModal.value = false;
+        createUserSuccessMessage.value = `Utente ${newUser.value.username} creato con successo`;
         newUser.value = { username: '', password: '', role: '' };
-
+        setTimeout(() => {
+            createUserSuccessMessage.value = '';
+        }, 3500);
     } catch (error) {
-        console.error('Error creating user: ', error);
+        console.error('Error creating user:', error);
     }
 }
 
-async function handleDelete(id) {
+function confirmDeleteUser(id) {
+    userToDeleteId.value = id;
+    showDeleteConfirmDialog.value = true;
+}
+
+function cancelDeleteUser() {
+    showDeleteConfirmDialog.value = false;
+    userToDeleteId.value = null;
+}
+
+async function proceedDeleteUser() {
+    if (!userToDeleteId.value) return;
     try {
-        const confirmed = window.confirm('Are you sure you want to delete this user?');
-        if (!confirmed) return;
-
-        const res = await axios.delete(`${API_BASE_URL}/delete-user/${id}`,
-            { withCredentials: true }
-        );
-
-        if (res.status === 200) {
-            usersList.value = usersList.value.filter(user => user.id !== id);
-            console.log('User deleted successfully: ', res.data);
-        } else {
-            console.error('Failed to delete user: ', res);
-        }
-
+        const res = await axios.delete(`${API_BASE_URL}/delete-user/${userToDeleteId.value}`, { withCredentials: true });
+        if (res.status === 200) usersList.value = usersList.value.filter(u => u.id !== userToDeleteId.value);
     } catch (error) {
-        console.error('Error deleting user: ', error);
+        console.error('Error deleting user:', error);
+    } finally {
+        showDeleteConfirmDialog.value = false;
+        userToDeleteId.value = null;
     }
 }
 
 async function handleFetchUsers() {
     try {
-        const res = await axios.get(`${API_BASE_URL}/users`,
-            { withCredentials: true }
-        );
-        console.log('Users fetched successfully: ', res.data);
+        const res = await axios.get(`${API_BASE_URL}/users`, { withCredentials: true });
         usersList.value = res.data.users;
         showUsersModal.value = true;
-
-        return res.data;
-
     } catch (error) {
-        console.error('Error fetching users: ', error);
+        console.error('Error fetching users:', error);
     }
 }
 
-async function handleItems(n, p, c) {
-    try {
-        const res = await axios.post(`${API_BASE_URL}/add-item`, {
-            name: n,
-            price: p,
-            category: c
-        }
-            , { withCredentials: true }
-        );
-        console.log('Item added: ', res.data);
-
-    } catch (error) {
-        console.error('Error adding the new item: ', error);
-    }
-}   
 </script>
 
 <template>
-    <div class="admin-view">
-        <div class="dashboard-container">
-            <h1>Admin Dashboard</h1>
+    <!-- ░░ PAGE BACKGROUND ░░ -->
+    <div class="relative isolate h-[calc(100vh-7rem)] overflow-hidden px-4 py-8 sm:px-6 lg:px-10">
 
-            <div class="button-grid">
-                <div class="dashboard-card" @click="handleFetchUsers">
-                    <div class="icon" v-html="icons.viewUsers"></div>
-                    <h3>Utenti</h3>
-                    <p>Visualizza tutti gli utenti del sistema</p>
+        <div class="mx-auto flex h-full w-full max-w-6xl flex-col gap-8">
+
+            <Transition name="fade">
+                <div
+                    v-if="createUserSuccessMessage"
+                    class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-medium text-emerald-800"
+                >
+                    {{ createUserSuccessMessage }}
                 </div>
+            </Transition>
 
-                <div class="dashboard-card" @click="showCreateUserModal = true">
-                    <div class="icon" v-html="icons.createUser"></div>
-                    <h3>Crea Utente</h3>
-                    <p>Aggiungi un nuovo utente al sistema</p>
-                </div>
+            <!-- ░░ HERO HEADER CARD ░░ -->
+            <div class="rounded-3xl border-2 border-slate-200/60 bg-white/80 px-8 py-8 backdrop-blur-sm sm:px-10 sm:py-10">
+                <span class="inline-block rounded-full bg-slate-100 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-widest text-slate-500">
+                    Admin Dashboard
+                </span>
+                <h1 class="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                    Seleziona una sezione
+                </h1>
+                <p class="mt-3 max-w-xl text-sm leading-relaxed text-slate-500 sm:text-base">
+                    Gestione rapida di utenti e articoli, con accesso diretto alle funzioni amministrative.
+                </p>
+            </div>
 
-                <div class="dashboard-card" @click="handleFetchItems">
-                    <div class="icon" v-html="icons.viewItems"></div>
-                    <h3>Inventario</h3>
-                    <p>Visualizza e gestisci tutti gli articoli nell'inventario</p>
-                </div>
+            <!-- ░░ ACTION CARDS GRID ░░ -->
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
 
-                <router-link to="/items-management" class="dashboard-card">
-                    <div class="icon" v-html="icons.addItem"></div>
-                    <h3>Gestione Articoli</h3>
-                    <p>Crea, modifica e gestisci gli articoli</p>
+                <!-- Visualizza Utenti -->
+                <button
+                    @click="handleFetchUsers"
+                    class="group flex aspect-square w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-slate-200/60 bg-white/80 p-5 text-center backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 sm:p-6 cursor-pointer"
+                >
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14">
+                        <i class="pi pi-users text-xl"></i>
+                    </span>
+                    <div>
+                        <p class="text-base font-semibold text-slate-900 sm:text-lg">Utenti</p>
+                        <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Visualizza tutti gli utenti</p>
+                    </div>
+                </button>
+
+                <!-- Crea Utente -->
+                <button
+                    @click="showCreateUserModal = true"
+                    class="group flex aspect-square w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-slate-200/60 bg-white/80 p-5 text-center backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 sm:p-6 cursor-pointer"
+                >
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14">
+                        <i class="pi pi-user-plus text-xl"></i>
+                    </span>
+                    <div>
+                        <p class="text-base font-semibold text-slate-900 sm:text-lg">Crea Utente</p>
+                        <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Aggiungi un nuovo utente</p>
+                    </div>
+                </button>
+
+                <!-- Planning Inventario -->
+                <router-link
+                    to="/inventory-planning"
+                    class="group flex aspect-square w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-slate-200/60 bg-white/80 p-5 text-center backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 sm:p-6 no-underline"
+                >
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14">
+                        <i class="pi pi-clipboard text-xl"></i>
+                    </span>
+                    <div>
+                        <p class="text-base font-semibold text-slate-900 sm:text-lg">Planning Inventario</p>
+                        <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Scorte e fabbisogno acquisti</p>
+                    </div>
                 </router-link>
-            </div>
-        </div>
 
-        <router-link to="/" class="home-link">
-            <h2>Home</h2>
-        </router-link>
-    </div>
+                <!-- Gestione Articoli -->
+                <router-link
+                    to="/items-management"
+                    class="group flex aspect-square w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-slate-200/60 bg-white/80 p-5 text-center backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 sm:p-6 no-underline"
+                >
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14">
+                        <i class="pi pi-wrench text-xl"></i>
+                    </span>
+                    <div>
+                        <p class="text-base font-semibold text-slate-900 sm:text-lg">Gestione Articoli</p>
+                        <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Crea, modifica gli articoli</p>
+                    </div>
+                </router-link>
 
-    <!-- Users List Modal -->
-    <div v-if="showUsersModal" class="modal-overlay">
-        <div class="modal-content users-modal">
-            <h2>Lista Utenti</h2>
-            <div class="users-list">
-                <table v-if="usersList.length">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Ruolo</th>
-                            <th>Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="user in usersList" :key="user.id">
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.role }}</td>
-                            <td>
-                                <button @click="handleDelete(user.id)" class="cancel-btn">
-                                    Delete
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p v-else>Nessun utente trovato</p>
             </div>
-            <div class="modal-actions">
-                <button @click="showUsersModal = false" class="cancel-btn">Chiudi</button>
-            </div>
+
+
         </div>
     </div>
 
-    <!-- Create User Modal -->
-    <div v-if="showCreateUserModal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Crea un nuovo utente</h2>
-            <form @submit.prevent="handleCreate">
-                <div class="form-group">
-                    <label>Username:</label>
-                    <input v-model="newUser.username" type="text" required>
+    <!-- ░░ MODAL: LISTA UTENTI ░░ -->
+    <Teleport to="body">
+        <Transition name="fade">
+            <div v-if="showUsersModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showUsersModal = false"></div>
+                <div class="relative w-full max-w-3xl rounded-3xl border-2 border-slate-200/60 bg-white">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between border-b border-slate-100 px-8 py-6">
+                        <h2 class="text-lg font-semibold text-slate-900">Lista Utenti</h2>
+                        <button @click="showUsersModal = false" class="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                            <i class="pi pi-times text-sm"></i>
+                        </button>
+                    </div>
+                    <!-- Body -->
+                    <div class="max-h-[60vh] overflow-y-auto px-8 py-4">
+                        <table v-if="usersList.length" class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-100">
+                                    <th class="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">ID</th>
+                                    <th class="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Username</th>
+                                    <th class="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Ruolo</th>
+                                    <th class="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50">
+                                <tr v-for="user in usersList" :key="user.id" class="hover:bg-slate-50/60 transition-colors">
+                                    <td class="py-3 text-slate-400 font-mono text-xs">{{ user.id }}</td>
+                                    <td class="py-3 font-medium text-slate-800">{{ user.username }}</td>
+                                    <td class="py-3">
+                                        <span class="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ user.role }}</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <button
+                                            @click="confirmDeleteUser(user.id)"
+                                            class="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100"
+                                        >
+                                            Rimuovi
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p v-else class="py-8 text-center text-sm text-slate-400">Nessun utente trovato</p>
+                    </div>
+                    <!-- Footer -->
+                    <div class="flex justify-end border-t border-slate-100 px-8 py-5">
+                        <button @click="showUsersModal = false" class="rounded-xl bg-slate-900 px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80">
+                            Chiudi
+                        </button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Password:</label>
-                    <input v-model="newUser.password" type="password" required>
-                </div>
-                <div class="form-group">
-                    <label>Ruolo:</label>
-                    <select v-model="newUser.role" required>
-                        <option value="admin">Admin</option>
-                        <option value="cashier">Cassa</option>
-                        <option value="Cicchetti">Cicchetti</option>
-                        <option value="Spina">Spina</option>
-                        <option value="Bar">Bar</option>
-                        <option value="Drinks">Drinks</option>
-                    </select>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit" class="confirm-btn">Crea</button>
-                    <button type="button" @click="showCreateUserModal = false" class="cancel-btn">Chiudi</button>
-                </div>
-            </form>
-        </div>
-    </div>
+            </div>
+        </Transition>
+    </Teleport>
 
-    <!-- Items List Modal -->
-    <div v-if="showItemsModal" class="modal-overlay">
-        <div class="modal-content users-modal">
-            <h2>Lista Articoli</h2>
-            <div class="users-list">
-                <table v-if="itemsList.length">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nome</th>
-                            <th>Prezzo</th>
-                            <th>Categoria</th>
-                            <th>Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="item in itemsList" :key="item.id">
-                            <td>{{ item.id }}</td>
-                            <td>{{ item.name }}</td>
-                            <td>€{{ item.price.toFixed(2) }}</td>
-                            <td>{{ item.category }}</td>
-                            <td>
-                                <button 
-                                    @click="handleDeleteItem(item.id)" 
-                                    class="cancel-btn"
+    <!-- ░░ MODAL: CREA UTENTE ░░ -->
+    <Teleport to="body">
+        <Transition name="fade">
+            <div v-if="showCreateUserModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showCreateUserModal = false"></div>
+                <div class="relative w-full max-w-md rounded-3xl border-2 border-slate-200/60 bg-white">
+                    <div class="flex items-center justify-between border-b border-slate-100 px-8 py-6">
+                        <h2 class="text-lg font-semibold text-slate-900">Crea nuovo utente</h2>
+                        <button @click="showCreateUserModal = false" class="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                            <i class="pi pi-times text-sm"></i>
+                        </button>
+                    </div>
+                    <div class="px-8 py-6 flex flex-col gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Username</label>
+                            <input v-model="newUser.username" type="text" required
+                                class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all" />
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Password</label>
+                            <input v-model="newUser.password" type="password" required
+                                class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all" />
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ruolo</label>
+                            <select v-model="newUser.role" required
+                                class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all">
+                                <option value="">Seleziona ruolo</option>
+                                <option
+                                    v-for="role in availableRoles"
+                                    :key="role.value"
+                                    :value="role.value"
                                 >
-                                    Rimuovi
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p v-else>Nessun articolo trovato</p>
+                                    {{ role.label }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 border-t border-slate-100 px-8 py-5">
+                        <button @click="showCreateUserModal = false" class="rounded-xl border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                            Annulla
+                        </button>
+                        <button @click="handleCreate" class="rounded-xl bg-slate-900 px-5 py-2 text-sm font-medium text-white hover:opacity-80 transition-opacity">
+                            Crea
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="modal-actions">
-                <button @click="showItemsModal = false" class="cancel-btn">Chiudi</button>
-            </div>
-        </div>
-    </div>
+        </Transition>
+    </Teleport>
 
-    <!-- Add Item Modal -->
-    <div v-if="showAddItemModal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Aggiungi nuovo articolo</h2>
-            <form @submit.prevent="handleItems(newItem.name, newItem.price, newItem.category)">
-                <div class="form-group">
-                    <label>Nome:</label>
-                    <input v-model="newItem.name" type="text" required>
-                </div>
-                <div class="form-group">
-                    <label>Prezzo:</label>
-                    <input v-model="newItem.price" type="number" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label>Categoria:</label>
-                    <select v-model="newItem.category" required>
-                        <option value="Cicchetti">Cicchetti</option>
-                        <option value="Spina">Spina</option>
-                        <option value="Bar">Bar</option>
-                        <option value="Drinks">Drinks</option>
-                    </select>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit" class="confirm-btn">Aggiungi</button>
-                    <button type="button" @click="showAddItemModal = false" class="cancel-btn">Chiudi</button>
-                </div>
-            </form>
+    <!-- ░░ MODAL: CONFERMA ELIMINAZIONE ░░ -->
+    <Dialog
+        v-model:visible="showDeleteConfirmDialog"
+        modal
+        header="Elimina utente"
+        :draggable="false"
+        class="dialog w-[92vw] max-w-lg"
+        :pt="{ 
+            header: { class: 'p-6 pb-4' },
+            content: { class: 'p-6 pt-0' },
+            footer: { class: 'p-6 pt-4' },
+            closeButton: { class: 'flex h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:shadow-none focus:ring-0', style: 'outline:none;box-shadow:none' } 
+        }"
+    >
+        <div class="p-2">
+            <div class="mb-4 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3">
+                <i class="pi pi-exclamation-triangle text-lg text-red-600"></i>
+                <p class="text-sm font-medium text-red-700">Questa operazione non può essere annullata.</p>
+            </div>
+            <p class="text-sm text-slate-700">
+                Sei sicuro di voler eliminare l'utente?
+            </p>
         </div>
-    </div>
+        <template #footer>
+            <div class="flex justify-end gap-3">
+                <Button
+                    label="Annulla"
+                    severity="secondary"
+                    outlined
+                    class="rounded-full border-slate-300 px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-100 hover:border-slate-400"
+                    @click="cancelDeleteUser"
+                />
+                <Button
+                    label="Elimina definitivamente"
+                    icon="pi pi-trash"
+                    class="rounded-full bg-red-600 px-5 py-2.5 font-semibold text-white hover:bg-red-700"
+                    @click="proceedDeleteUser"
+                />
+            </div>
+        </template>
+    </Dialog>
+
 </template>
 
 <style scoped>
-.admin-view {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-    min-height: 100vh;
+/* Modal transition */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
 }
-
-.dashboard-container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-h1 {
-    color: 4A4A4A;
-    margin-bottom: 2rem;
-    font-size: 2.5rem;
-    font-weight: 700;
-    text-align: center;
-}
-
-.button-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 2rem;
-}
-
-.dashboard-card {
-    background: #4A4A4A;
-    border-radius: 20px;
-    padding: 2.5rem;
-    text-decoration: none;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    aspect-ratio: 1;
-    justify-content: center;
-    gap: 0.75rem;
-    cursor: pointer;
-}
-
-.dashboard-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.icon {
-    color: white;
-    margin-bottom: 0.5rem;
-}
-
-h2 {
-    color: black;
-    text-align: center;
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-h3 {
-    color: white;
-    margin: 0;
-    font-size: 1.75rem;
-    font-weight: 500;
-}
-
-p {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0;
-    font-weight: 500;
-    font-size: 1rem;
-}
-
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background-color: #2c2c2c;
-    padding: 2.5rem;
-    border-radius: 20px;
-    width: 90%;
-    max-width: 500px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    color: white;
-
-}
-
-.modal-content h2 {
-    color: white;
-    font-size: 1.75rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 1rem;
-}
-
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: #3a3a3a;
-    border: 1px solid #4a4a4a;
-    border-radius: 10px;
-    font-size: 1rem;
-    color: white;
-    transition: border-color 0.2s ease;
-}
-
-.form-group select option {
-    background-color: #2c2c2c;
-    color: white;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 2rem;
-}
-
-.confirm-btn,
-.cancel-btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.confirm-btn {
-    border-style: solid;
-    border-color: white;
-    border-width: 1px;
-    background-color: #2c2c2c;
-    color: white;
-}
-
-.cancel-btn {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.confirm-btn:hover {
-    transform: translateY(-2px);
-}
-
-.cancel-btn:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-}
-
-.users-modal {
-    max-width: 800px;
-}
-
-.users-list {
-    margin: 1rem 0;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin: 1rem 0;
-    background-color: #2c2c2c;
-}
-
-th {
-    background-color: #3a3a3a;
-    color: white;
-    font-weight: 500;
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 2px solid #4a4a4a;
-}
-
-td {
-    padding: 1rem;
-    color: rgba(255, 255, 255, 0.9);
-    border-bottom: 1px solid #4a4a4a;
-}
-
-tr:hover {
-    background-color: #3a3a3a;
-}
-
-.home-link {
-    display: block;
-    text-align: center;
-    padding: 1rem;
-    color: rgba(0, 0, 0, 0.8);
-    text-decoration: none;
-    background: #f1f1f1;
-    border-radius: 12px;
-    margin: 0 auto;
-    max-width: 200px;
-    margin-top: 30px;
-    transition: all 0.3s ease;
-}
-
-.home-link:hover {
-    transform: translateY(-2px);
-}
-
-/* SVG styles */
-.icon svg {
-    width: 30px;
-    height: 30px;
-    display: block;
-}
-
-@media (max-width: 768px) {
-    .admin-view {
-        padding: 4rem 1rem 1rem 1rem;
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        left: 0;
-    }
-
-    .button-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 1rem;
-        width: 100%;
-    }
-
-    .dashboard-card {
-        padding: 1rem;
-        aspect-ratio: 1;
-        max-width: 180px;
-        width: 100%;
-    }
-
-    .modal-content {
-        padding: 1.5rem;
-        margin: 1rem;
-    }
-
-    .users-modal {
-        padding: 1rem;
-    }
-
-    table {
-        font-size: 0.9rem;
-    }
-
-    th, td {
-        padding: 0.75rem;
-    }
-
-    .confirm-btn,
-    .cancel-btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-    }
-
-    h3 {
-        font-size: 1.2rem;
-    }
-
-    p {
-        font-size: 0.9rem;
-    }
-
-    .icon {
-        font-size: 2rem !important;
-    }
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 </style>

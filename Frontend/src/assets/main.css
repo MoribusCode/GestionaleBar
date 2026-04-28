@@ -10,3 +10,83 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+html,
+body,
+#app {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+}
+
+/* ── Dialog bilancio: stili globali (PrimeVue usa teleport nel body) ── */
+.dialog.p-dialog {
+  border-radius: 1.25rem !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.18), 0 8px 24px -8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dialog.p-dialog .p-dialog-header {
+  background: #ffffff !important;
+  border-bottom: 1.5px solid #e2e8f0 !important;
+  padding: 1rem !important; /* p-4 equivalent */
+  border-radius: 1.25rem 1.25rem 0 0 !important;
+}
+
+.dialog.p-dialog .p-dialog-title {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Croce di chiusura */
+.dialog.p-dialog .p-dialog-header button,
+.dialog.p-dialog .p-dialog-header-icon,
+.dialog.p-dialog .p-dialog-header-icons button {
+  border-radius: 0.625rem !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: 1.5px solid #e2e8f0 !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  font-size: 0.9rem !important;
+  transition: background 0.15s, border-color 0.15s, color 0.15s !important;
+}
+
+.dialog.p-dialog .p-dialog-header button:focus,
+.dialog.p-dialog .p-dialog-header button:focus-visible,
+.dialog.p-dialog .p-dialog-header-icon:focus,
+.dialog.p-dialog .p-dialog-header-icon:focus-visible,
+.dialog.p-dialog .p-dialog-header-icons button:focus,
+.dialog.p-dialog .p-dialog-header-icons button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.dialog.p-dialog .p-dialog-header button:hover,
+.dialog.p-dialog .p-dialog-header-icon:hover,
+.dialog.p-dialog .p-dialog-header-icons button:hover {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+}
+
+.dialog.p-dialog .p-dialog-content {
+  background: #ffffff !important;
+  padding: 0 1rem 1rem !important; /* Update: p-4 px and pb equivalent */
+}
+
+.dialog.p-dialog .p-dialog-footer {
+  background: #f8fafc !important;
+  border-top: 1.5px solid #e2e8f0 !important;
+  padding: 1rem !important; /* p-4 equivalent */
+  border-radius: 0 0 1.25rem 1.25rem !important;
+}

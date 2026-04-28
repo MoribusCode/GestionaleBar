@@ -22,6 +22,7 @@ module.exports = function (fastify, opts, done) {
                 o.order_id as id,
                 o.status as status,
                 o.total_price as totalPrice,
+                o.created_at as createdAt,
                 json_group_array(
                     json_object(
                         'name', oi.item_name, 
@@ -222,6 +223,26 @@ module.exports = function (fastify, opts, done) {
     // POST - Chiudi giornata (svuota ordini e order_items)
     fastify.post("/orders/close-day", async (request, reply) => {
         try {
+            const dayTotalRow = await dbGet(
+                'SELECT COALESCE(SUM(total_price), 0) AS dayTotal FROM orders'
+            );
+            const dayTotal = Number(dayTotalRow?.dayTotal) || 0;
+
+            if (dayTotal > 0) {
+                const now = new Date();
+                const dayLabel = now.toLocaleDateString('it-IT');
+
+                await dbRun(
+                    `INSERT INTO transactions (amount, type, description)
+                     VALUES (?, 'IN', ?)`,
+                    [dayTotal, `Chiusura giornata ${dayLabel}`]
+                );
+
+                if (fastify.io) {
+                    fastify.io.emit('transaction-updated');
+                }
+            }
+
             // Prima svuoto order_items
             await dbRun("DELETE FROM order_items");
 

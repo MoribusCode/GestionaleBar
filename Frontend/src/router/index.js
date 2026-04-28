@@ -44,6 +44,14 @@ const router = createRouter({
       }
     },
     {
+      path: '/bilancio',
+      name: 'bilancio',
+      component: () => import('@/views/BilancioView.vue'),
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
       path: '/cicchetti',
       name: 'cicchetti',
       component: () => import('@/views/Cicchetti.vue'),
@@ -83,6 +91,15 @@ const router = createRouter({
       path: '/items-management',
       name: 'items-management',
       component: () => import('@/views/ItemsManagement.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['admin']
+      }
+    },
+    {
+      path: '/inventory-planning',
+      name: 'inventory-planning',
+      component: () => import('@/views/InventoryPlanningView.vue'),
       meta: {
         requiresAuth: true,
         roles: ['admin']

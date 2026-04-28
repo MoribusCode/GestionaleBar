@@ -1,6 +1,7 @@
 <script setup>
 import axios from 'axios';
 import { ref, watch, onUnmounted } from 'vue';
+import Button from 'primevue/button';
 import { addedToOrder } from '@/store.js';
 import { API_BASE_URL } from '@/store';
 
@@ -10,6 +11,8 @@ const emit = defineEmits(['orderStored'])
 const list = ref([]);
 const orderNote = ref('');
 const showConfirmation = ref(false);
+const lastOrderId = ref(null);
+let confirmationTimeout = null;
 
 async function storeOrder() {
   try {
@@ -21,9 +24,15 @@ async function storeOrder() {
     });
     console.log('Order stored successfully', response.data);
 
+    lastOrderId.value = response.data?.id ?? null;
+
     showConfirmation.value = true;
 
-    setTimeout(() => {
+    if (confirmationTimeout) {
+      clearTimeout(confirmationTimeout);
+    }
+
+    confirmationTimeout = setTimeout(() => {
       showConfirmation.value = false;
     }, 5000);
 
@@ -64,433 +73,48 @@ watch(addedToOrder, handleItemsAdded,
 );
 
 onUnmounted(() => {
+  if (confirmationTimeout) {
+    clearTimeout(confirmationTimeout);
+  }
   clean();
 });
-
-function launch_toast() {
-  var x = document.getElementById("toast")
-  x.className = "show";
-
-  setTimeout(function () {
-    x.className = x.className.replace("show", "");
-  }, 5000);
-}
 </script>
 
 <template>
-  <div class="active-order-container">
-    <h1 class="order-title">Comanda attiva</h1>
+  <div class="flex h-full min-h-0 flex-col rounded-2xl border-2 border-slate-200/70 bg-white/85 p-3 backdrop-blur-sm">
+    <h1 class="mb-3 text-center text-3xl font-black text-zinc-900">Comanda</h1>
 
-    <div class="order-content">
-      <ul class="order-list">
-        <li class="itemList" v-for="(item, index) in list" :key="index">
-          <div class="item-details">
-            <span class="item-name">{{ item.name }} x{{ item.quantity }}</span>
-            <button class="remove-btn" @click="removeItem(index)">-</button>
+    <div class="flex flex-1 flex-col">
+      <ul class="h-80 space-y-2 overflow-y-auto rounded-2xl border-2 border-slate-200/70 bg-slate-50/80 p-3">
+        <li class="rounded-md border border-slate-200 bg-white/90 p-2" v-for="(item, index) in list" :key="index">
+          <div class="flex items-center justify-between gap-2">
+            <span class="truncate text-sm font-medium text-zinc-800">{{ item.name }} x{{ item.quantity }}</span>
+            <Button @click="removeItem(index)" label="-" class="h-7! w-7! rounded-md! border! border-slate-300! bg-slate-200! p-0! text-zinc-800! hover:bg-slate-300!" />
           </div>
         </li>
       </ul>
 
-      <div class="note-section">
-        <textarea id="order-note" v-model="orderNote" placeholder="Nota Ordine" class="order-note"> </textarea>
+      <div class="my-2">
+        <textarea
+          id="order-note"
+          v-model="orderNote"
+          placeholder="Nota Ordine"
+          class="min-h-20 w-full rounded-xl border border-slate-200 bg-white/90 p-2 text-sm text-zinc-800 outline-none"
+        ></textarea>
       </div>
 
-      <div class="total-section">
-        <h2>Totale: €{{ totalPrice().toFixed(2) }}</h2>
+      <div class="mb-3 text-center text-3xl font-black text-zinc-800">
+        Totale: €{{ totalPrice().toFixed(2) }}
       </div>
     </div>
 
-    <div class="action-buttons">
-      <button class="btn reset" @click="clean">Reset</button>
-      <button class="btn submit" @click="storeOrder(); launch_toast()">Invia Ordine</button>
+    <div class="flex gap-3">
+      <Button @click="clean" label="Cancella" class="h-10! flex-1! rounded-lg! border! border-zinc-200! bg-zinc-200! font-bold! text-zinc-500! hover:bg-zinc-300!" />
+      <Button @click="storeOrder" label="Conferma" class="h-10! flex-1! rounded-lg! border! border-zinc-200! bg-white! font-bold! text-zinc-900! hover:bg-zinc-100!" />
     </div>
 
-    <router-link to="/" class="home-link">
-      <h3>Home</h3>
-    </router-link>
-
-    <!-- Toast Popup -->
-    <div id="toast">
-      <div id="desc">ORDINE INVIATO!</div>
+    <div v-if="showConfirmation" class="mt-2 rounded-lg border border-emerald-300 bg-emerald-100 p-2 text-center text-sm font-semibold text-emerald-800">
+      Ordine {{ lastOrderId ? '#' + lastOrderId : '' }} inviato!
     </div>
-
   </div>
 </template>
-
-
-<style scoped>
-.active-order-container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 2rem;
-  background: var(--secondary-color);
-  border-radius: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.order-title {
-  color: white;
-  font-size: 2rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.order-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.itemList {
-  padding: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-
-.item-details {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.item-name {
-  font-size: 1.1rem;
-  color: white;
-}
-
-.remove-btn {
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 4px 12px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.remove-btn:hover {
-  background: var(--primary-hover);
-}
-
-.note-section {
-  margin: 1.5rem 0;
-}
-
-.order-note {
-  width: 100%;
-  min-height: 80px;
-  padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  resize: vertical;
-  font-family: inherit;
-  background: rgba(0, 0, 0, 0.2);
-  color: white;
-}
-
-.total-section {
-  margin: 1.5rem 0;
-  text-align: right;
-  color: white;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 1rem;
-  margin: 1.5rem 0;
-}
-
-.btn {
-  flex: 1;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.reset {
-  background: var(--secondary-color);
-  border-width: 1px;
-  border-color: white;
-  border-style: solid;
-  color: white;
-}
-
-.submit {
-  background: var(--primary-color);
-  color: white;
-}
-
-.submit:hover {
-  background: var(--primary-hover);
-}
-
-.reset:hover,
-.submit:hover {
-  transform: translateY(-2px);
-}
-
-.home-link {
-  display: block;
-  text-align: center;
-  color: white;
-  text-decoration: none;
-  margin-top: 1rem;
-  opacity: 0.8;
-  transition: opacity 0.2s ease;
-}
-
-.home-link:hover {
-  opacity: 1;
-}
-
-/* Custom Scrollbar */
-.order-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.order-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.order-list::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 3px;
-}
-
-.order-list::-webkit-scrollbar-thumb:hover {
-  background: #999;
-}
-
-/* Toast CSS */
-#toast {
-  visibility: hidden;
-  max-width: 50px;
-  height: 50px;
-  background-color: var(--secondary-color);
-  color: #fff;
-  text-align: center;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  position: fixed;
-  z-index: 1;
-  right: 20px;
-  bottom: 30px;
-  font-size: 17px;
-  white-space: nowrap;
-}
-
-#toast #desc {
-  color: #fff;
-  padding: 0;
-  font-weight: bold;
-  overflow: hidden;
-  white-space: nowrap;
-  opacity: 0;
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  height: 100%;
-  width: 100%;
-}
-
-#toast.show {
-  visibility: visible;
-  -webkit-animation: fadein 0.5s, expand 0.5s 0.5s, stay 3s 1s, shrink 0.5s 2s, fadeout 0.5s 2.5s;
-  animation: fadein 0.5s, expand 0.5s 0.5s, stay 3s 1s, shrink 0.5s 4s, fadeout 0.5s 4.5s;
-}
-
-#toast.show #desc {
-  -webkit-animation: textfadein 0.3s 1s forwards, textfadeout 0.3s 4.3s forwards;
-  animation: textfadein 0.3s 1s forwards, textfadeout 0.3s 4.3s forwards;
-}
-
-@-webkit-keyframes fadein {
-  from {
-    bottom: 0;
-    opacity: 0;
-  }
-
-  to {
-    bottom: 30px;
-    opacity: 1;
-  }
-}
-
-@keyframes fadein {
-  from {
-    bottom: 0;
-    opacity: 0;
-  }
-
-  to {
-    bottom: 30px;
-    opacity: 1;
-  }
-}
-
-@-webkit-keyframes expand {
-  from {
-    min-width: 50px
-  }
-
-  to {
-    min-width: 350px
-  }
-}
-
-@keyframes expand {
-  from {
-    min-width: 50px
-  }
-
-  to {
-    min-width: 350px
-  }
-}
-
-@-webkit-keyframes textfadein {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes textfadein {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@-webkit-keyframes textfadeout {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes textfadeout {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@-webkit-keyframes stay {
-  from {
-    min-width: 350px
-  }
-
-  to {
-    min-width: 350px
-  }
-}
-
-@keyframes stay {
-  from {
-    min-width: 350px
-  }
-
-  to {
-    min-width: 350px
-  }
-}
-
-@-webkit-keyframes shrink {
-  from {
-    min-width: 350px;
-  }
-
-  to {
-    min-width: 50px;
-  }
-}
-
-@keyframes shrink {
-  from {
-    min-width: 350px;
-  }
-
-  to {
-    min-width: 50px;
-  }
-}
-
-@-webkit-keyframes fadeout {
-  from {
-    bottom: 30px;
-    opacity: 1;
-  }
-
-  to {
-    bottom: 60px;
-    opacity: 0;
-  }
-}
-
-@keyframes fadeout {
-  from {
-    bottom: 30px;
-    opacity: 1;
-  }
-
-  to {
-    bottom: 60px;
-    opacity: 0;
-  }
-}
-
-/* End Toast CSS */
-
-@media (max-width: 1024px) {
-  .action-buttons {
-    gap: 2rem;
-    /* Increased from 1rem to 2rem */
-    padding: 0 2rem;
-    /* Add horizontal padding */
-    margin: 2rem 0;
-    /* Increased vertical margin */
-  }
-
-  .btn {
-    padding: 1rem;
-    /* Increased padding */
-    font-size: 1.1rem;
-    /* Slightly larger font */
-  }
-}
-
-/* Further adjust for mobile */
-@media (max-width: 768px) {
-  .action-buttons {
-    flex-direction: column;
-    /* Stack buttons vertically */
-    gap: 1rem;
-    padding: 0 1rem;
-  }
-
-  .btn {
-    width: 100%;
-    padding: 1rem;
-  }
-}
-</style>

@@ -1,8 +1,8 @@
 <script setup>
 import { ref, provide, computed } from 'vue';
-import { RouterView, useRoute } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router';
 import Navbar from '@/components/Navbar.vue';
-import Sidebar from '@/components/Sidebar.vue'
+
 
 const route = useRoute();
 
@@ -17,10 +17,10 @@ const showMenubar = computed(() => route.name !== 'login');
 
 <template>
 
-  <div class="min-h-screen bg-slate-100 font-sans text-slate-900">
+  <div class="h-screen bg-slate-100 font-sans text-slate-900">
     <Navbar v-if="showMenubar" />
 
-    <main class="container mx-auto p-6">
+    <main class="h-full overflow-y-auto overflow-x-hidden px-3 pb-4 pt-28 lg:px-5 lg:pb-5 lg:pt-30">
       <router-view />
     </main>
   </div>

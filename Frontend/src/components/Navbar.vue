@@ -1,5 +1,5 @@
 <template>
-  <Menubar :model="menuItems" class="border-none bg-transparent py-4 px-8 shadow-sm backdrop-blur-md sticky top-0 z-50">
+  <Menubar :model="menuItems" class="fixed left-0 right-0 top-0 z-50 border-2 border-slate-200/70 bg-transparent py-4 px-8 backdrop-blur-md">
     
     <template #start>
       <div class="flex items-center gap-2 mr-8 cursor-pointer" @click="$router.push('/')">
@@ -20,7 +20,7 @@
           :class="[
             'inline-flex items-center gap-2 justify-center px-4 py-2 mx-1 rounded-lg transition-all duration-200 font-medium leading-none',
             isActive 
-              ? 'bg-slate-800 text-white shadow-md' 
+              ? 'bg-slate-800 text-white' 
               : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
             ]"
             >
@@ -69,13 +69,15 @@ const isBeer = () => userStore.user?.role === 'Spina';
 const isBar = () => userStore.user?.role === 'Bar';
 const isDrink = () => userStore.user?.role === 'Drinks';
 const isStaff = () => ['admin', 'cashier', 'Cicchetti', 'Spina', 'Bar', 'Drinks'].includes(userStore.user?.role);
+const isAuthenticated = () => !!userStore.user;
 
 // Definiamo le rotte per la navigazione
 const menuItems = ref([
   { label: 'Home', route: '/', icon: { type: 'material', name: 'home' }, visible: isStaff },
+  { label: 'Bilancio', route: '/bilancio', icon: { type: 'material', name: 'account_balance_wallet' }, visible: isAuthenticated },
   { label: 'Admin', route: '/admin', icon: { type: 'material', name: 'admin_panel_settings' }, visible: isAdmin },
   { label: 'Storico', route: '/history', icon: { type: 'material', name: 'history' }, visible: isStaff },
-  { label: 'Ordini', route: '/orders', icon: { type: 'material', name: 'shopping_cart' }, visible: isCashier },
+  { label: 'Cassa', route: '/orders', icon: { type: 'material', name: 'shopping_cart' }, visible: isCashier },
   { label: 'Cicchetti', route: '/cicchetti', icon: { type: 'material', name: 'fastfood' }, visible: isFood },
   { label: 'Birre', route: '/birre', icon: { type: 'material', name: 'local_bar' }, visible: isBeer },
   { label: 'Bar', route: '/bar', icon: { type: 'material', name: 'coffee' }, visible: isBar },
@@ -89,6 +91,29 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
+:deep(.p-menubar) {
+  background: transparent;
+}
+
+:deep(.p-menubar-root-list) {
+  gap: 0.25rem;
+}
+
+:deep(.p-menubar-item),
+:deep(.p-menubar-item-content),
+:deep(.p-menubar-item-link) {
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+:deep(.p-menubar-item-link:hover),
+:deep(.p-menubar-item-link:focus),
+:deep(.p-menubar-item-link:focus-visible) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 :deep(.p-menubar-end) {
   margin-left: auto;
   display: flex;

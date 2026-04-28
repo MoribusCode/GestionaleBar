@@ -27,47 +27,15 @@ function addToOrder(id) {
 </script>
 
 <template>
-  <div class="order-layout">
-    <div class="items-grid">
+  <div class="min-h-screen bg-zinc-100 p-3 lg:p-4">
+    <div class="xl:fixed xl:left-4 xl:right-92 xl:top-32 xl:bottom-4 xl:overflow-y-auto">
       <ItemsTemplate :items="props.items" @item-added="addToOrder" />
     </div>
 
-    <div class="active-order-sidebar">
-      <ActiveOrder />
+    <div class="mt-4 xl:fixed xl:right-4 xl:top-32 xl:bottom-4 xl:mt-0 xl:w-85">
+      <ActiveOrder class="h-full" />
     </div>
   </div>
 </template>
-
-<style scoped>
-.order-layout {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 2rem;
-  padding: 1.5rem;
-  min-height: 100vh;
-}
-
-.items-grid {
-  padding-right: 1rem;
-}
-
-.active-order-sidebar {
-  position: sticky;
-  top: 1.5rem;
-  height: calc(100vh - 3rem);
-  overflow-y: auto;
-}
-
-@media (max-width: 1024px) {
-  .order-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .active-order-sidebar {
-    position: static;
-    height: auto;
-  }
-}
-</style>
 
   

@@ -79,6 +79,27 @@ db.serialize(() => {
       description TEXT
     )
   `);
+
+  // Migrazione leggera: aggiunge colonne mancanti per allegati scontrino.
+  db.all('PRAGMA table_info(transactions)', (err, columns) => {
+    if (err) {
+      console.error('Errore lettura schema transactions:', err.message);
+      return;
+    }
+
+    const existingColumns = new Set((columns || []).map((column) => column.name));
+    const requiredColumns = [
+      { name: 'receipt_name', type: 'TEXT' },
+      { name: 'receipt_mime_type', type: 'TEXT' },
+      { name: 'receipt_data', type: 'TEXT' }
+    ];
+
+    requiredColumns.forEach((column) => {
+      if (!existingColumns.has(column.name)) {
+        db.run(`ALTER TABLE transactions ADD COLUMN ${column.name} ${column.type}`);
+      }
+    });
+  });
 });
 
 module.exports = db;

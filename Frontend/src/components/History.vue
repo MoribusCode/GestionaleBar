@@ -3,10 +3,18 @@ import axios from 'axios';
 import { onMounted, ref } from 'vue';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import Card from 'primevue/card';
+import Button from 'primevue/button';
+import Tag from 'primevue/tag';
+import Dialog from 'primevue/dialog';
 import { API_BASE_URL } from '@/store';
 
 let orders = ref([]);
 const shown = ref(null);
+
+const showDeleteOrderDialog = ref(false);
+const orderToDeleteId = ref(null);
+const showCloseDayDialog = ref(false);
 
 onMounted(() => {
   getOrders();
@@ -23,12 +31,20 @@ async function getOrders() {
   }
 }
 
-async function deleteOrder(id, event) {
-  // Prevent the click from propagating to the card's click handler
+function confirmDeleteOrder(id, event) {
   event.stopPropagation();
+  orderToDeleteId.value = id;
+  showDeleteOrderDialog.value = true;
+}
 
-  const confirmed = window.confirm(`Sei sicuro di voler eliminare l'ordine #${id}? Questa azione non può essere annullata.`);
-  if (!confirmed) return;
+function cancelDeleteOrder() {
+  showDeleteOrderDialog.value = false;
+  orderToDeleteId.value = null;
+}
+
+async function proceedDeleteOrder() {
+  if (!orderToDeleteId.value) return;
+  const id = orderToDeleteId.value;
 
   try {
     const res = await axios.delete(`${API_BASE_URL}/delete-order/${id}`);
@@ -40,6 +56,9 @@ async function deleteOrder(id, event) {
     }
   } catch (e) {
     console.error(`Error deleting order ${id}:`, e);
+  } finally {
+    showDeleteOrderDialog.value = false;
+    orderToDeleteId.value = null;
   }
 }
 
@@ -87,14 +106,16 @@ async function exportToExcel() {
   }
 }
 
-async function closeDay() {
+function confirmCloseDay() {
+  showCloseDayDialog.value = true;
+}
 
-  const confirmed = window.confirm(
-    "Vuoi chiudere la giornata?\nTUTTI gli ordini di oggi saranno esportati in Excel e poi cancellati."
-  );
-  if (!confirmed) {
-    return;
-  }
+function cancelCloseDay() {
+  showCloseDayDialog.value = false;
+}
+
+async function proceedCloseDay() {
+  showCloseDayDialog.value = false;
 
   try {
     exportToExcel();
@@ -105,7 +126,6 @@ async function closeDay() {
       orders.value = [];
       shown.value = null;
       console.log("Giornata chiusa con successo!");
-
     }
   } catch (e) {
     console.error("Errore durante la chiusura della giornata:", e);
@@ -115,303 +135,160 @@ async function closeDay() {
 </script>
 
 <template>
-  <div class="history-container">
-    <div class="header">
-      <h1>Storico ordini</h1>
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-4 pb-36">
+    <div class="rounded-2xl border-2 border-slate-200/70 bg-white/85 p-4 backdrop-blur-sm">
+      <h1 class="text-center text-3xl font-black text-zinc-900">Storico ordini</h1>
     </div>
 
-    <div class="orders-list">
-      <div v-for="order in orders" :key="order.id" class="order-card" :class="{ 'expanded': shown === order.id }">
-        <div class="order-header" @click="toggleOrder(order.id)">
-          <div class="order-info">
-            <strong>Ordine #{{ order.id }}</strong>
-            <span class="order-status" :class="order.status.toLowerCase().replace(' ', '-')">
-              {{ order.status }}
-            </span>
+    <div class="flex flex-col items-center gap-3">
+      <Card v-for="order in orders" :key="order.id" class="w-full max-w-2xl rounded-2xl border-2 border-slate-200/70 bg-white/85 backdrop-blur-sm">
+        <template #content>
+          <div class="flex cursor-pointer items-center justify-between gap-3" @click="toggleOrder(order.id)">
+            <div class="flex flex-wrap items-center gap-2">
+              <strong class="text-lg text-zinc-900">Ordine #{{ order.id }}</strong>
+              <Tag
+                :value="order.status"
+                :severity="order.status === 'completato' ? 'success' : order.status === 'parziale' ? 'warn' : 'info'"
+                class="capitalize px-3 py-1"
+              />
+            </div>
+            <Button
+              icon="pi pi-trash"
+              severity="danger"
+              text
+              rounded
+              class="rounded-xl transition-colors hover:bg-red-100"
+              @click="confirmDeleteOrder(order.id, $event)"
+            />
           </div>
-          <button class="delete-btn" @click="deleteOrder(order.id, $event)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-            </svg>
-          </button>
-        </div>
 
-        <div v-if="shown === order.id" class="order-details">
-          <ul class="items-list">
-            <li v-for="(item, index) in order.items" :key="index" class="order-item">
-              <span class="item-name">{{ item.name }}</span>
-              <span class="item-quantity">x{{ item.quantity }}</span>
-            </li>
-          </ul>
-          <div class="order-total">
-            Totale: <span>{{ order.totalPrice }} €</span>
+          <div v-if="shown === order.id" class="mt-3 border-t border-zinc-200 pt-3">
+            <ul class="grid grid-cols-1 gap-2 md:grid-cols-2">
+              <li
+                v-for="(item, index) in order.items"
+                :key="index"
+                class="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2"
+              >
+                <span class="text-sm font-medium text-zinc-800">{{ item.name }}</span>
+                <span class="text-sm font-semibold text-zinc-700">x{{ item.quantity }}</span>
+              </li>
+            </ul>
+
+            <div class="mt-3 text-right text-lg font-bold text-zinc-900">
+              Totale: {{ order.totalPrice }} €
+            </div>
           </div>
+        </template>
+      </Card>
+    </div>
+
+    <div v-if="orders.length === 0" class="rounded-2xl border-2 border-slate-200/70 bg-white/85 p-8 text-center text-zinc-500 backdrop-blur-sm">
+      Nessun ordine nello storico.
+    </div>
+
+    <div class="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/70 bg-white/95 px-3 py-4 backdrop-blur-sm lg:px-5">
+      <div class="mx-auto flex w-full max-w-5xl flex-wrap justify-end gap-3">
+        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-1">
+          <Button label="Esporta in Excel" icon="pi pi-file-excel" class="h-9! w-40!" @click="exportToExcel" />
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-1">
+          <Button label="Chiudi giornata" severity="danger" icon="pi pi-check-circle" class="h-9! w-40!" @click="confirmCloseDay" />
         </div>
       </div>
     </div>
 
-    <router-link to="/" class="home-link">
-      <h3>Home</h3>
-    </router-link>
+    <!-- ░░ MODAL: ELIMINA ORDINE ░░ -->
+    <Dialog
+        v-model:visible="showDeleteOrderDialog"
+        modal
+        header="Elimina ordine"
+        :draggable="false"
+        class="dialog w-[92vw] max-w-lg"
+        :pt="{ 
+            header: { class: 'p-4 pb-4' },
+            content: { class: 'p-4 pt-0' },
+            footer: { class: 'p-4 pt-4' },
+            closeButton: { class: 'flexxs h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:shadow-none focus:ring-0', style: 'outline:none;box-shadow:none' } 
+        }"
+    >
+        <div class="p-2">
+            <div class="mb-4 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3">
+                <i class="pi pi-exclamation-triangle text-lg text-red-600"></i>
+                <p class="text-sm font-medium text-red-700">Questa operazione non può essere annullata.</p>
+            </div>
+            <p class="text-sm text-slate-700">
+                Sei sicuro di voler eliminare l'ordine <span class="font-semibold text-slate-900">#{{ orderToDeleteId }}</span>?
+            </p>
+        </div>
+        <template #footer>
+            <div class="flex justify-end gap-3">
+                <Button
+                    label="Annulla"
+                    severity="secondary"
+                    outlined
+                    class="rounded-full border-slate-300 px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-100 hover:border-slate-400"
+                    @click="cancelDeleteOrder"
+                />
+                <Button
+                    label="Elimina definitivamente"
+                    icon="pi pi-trash"
+                    class="rounded-full bg-red-600 px-5 py-2.5 font-semibold text-white hover:bg-red-700"
+                    @click="proceedDeleteOrder"
+                />
+            </div>
+        </template>
+    </Dialog>
 
-    <div class="footer">
-      <div class="footer-buttons">
-        <button class="export-btn" @click="exportToExcel">
-          Esporta in Excel
-        </button>
-        <button class="export-btn" @click="closeDay">
-          Chiudi giornata
-        </button>
-      </div>
-    </div>
+    <!-- ░░ MODAL: CHIUDI GIORNATA ░░ -->
+    <Dialog
+        v-model:visible="showCloseDayDialog"
+        modal
+        header="Chiudi giornata"
+        :draggable="false"
+        class="dialog w-[92vw] max-w-lg"
+        :pt="{ 
+            header: { class: 'p-6 pb-4' },
+            content: { class: 'p-6 pt-0' },
+            footer: { class: 'p-6 pt-4' },
+            closeButton: { class: 'flex h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:shadow-none focus:ring-0', style: 'outline:none;box-shadow:none' } 
+        }"
+    >
+        <div class="p-2">
+            <div class="mb-4 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3">
+                <i class="pi pi-exclamation-triangle text-lg text-red-600"></i>
+                <p class="text-sm font-medium text-red-700">Questa operazione esporta e <span class="font-bold underline">cancella tutti gli ordini</span> di oggi.</p>
+            </div>
+            <p class="text-sm text-slate-700">
+                Vuoi procedere con la chiusura della giornata?
+            </p>
+        </div>
+        <template #footer>
+            <div class="flex justify-end gap-3">
+                <Button
+                    label="Annulla"
+                    severity="secondary"
+                    outlined
+                    class="rounded-full border-slate-300 px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-100 hover:border-slate-400"
+                    @click="cancelCloseDay"
+                />
+                <Button
+                    label="Chiudi giornata"
+                    icon="pi pi-check"
+                    class="rounded-full bg-slate-800 px-5 py-2.5 font-semibold text-white hover:bg-slate-900"
+                    @click="proceedCloseDay"
+                />
+            </div>
+        </template>
+    </Dialog>
   </div>
 </template>
 
-
 <style scoped>
-.history-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 6rem 2rem 2rem;
-  min-height: 100vh;
-  position: relative;
-}
-
-h1 {
-  font-weight: 700;
-  font-size: 2.5rem;
-  margin: 0px 0px 0px 0px;
-}
-
-.footer {
-  position: fixed;
-  bottom: 0;
-  right: 0;
-  left: 0;
-  background: #f1f1f1;
-  padding: 1rem 2rem;
-  border-top-color: white;
-  border-top-style: solid;
-  border-top-width: 1px;
-  z-index: 99;
-}
-
-
-.footer-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  max-width: 900px;
-  margin-left: auto;
-}
-
-.header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.header h1 {
-  color: black;
-  font-size: 2.5rem;
-}
-
-.export-btn {
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.export-btn:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-2px);
-}
-
-.delete-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.8);
-  padding: 0.5rem;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.delete-btn:hover {
-  color: #FF4444;
-}
-
-.orders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.order-card {
-  background: #4A4A4A;
-  border-radius: 20px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.order-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.order-header {
-  padding: 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: transparent;
-  color: white;
-}
-
-.order-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.order-status {
-  padding: 0.25rem 1rem;
-  border-style: solid;
-  border-width: 1px;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  color: white;
-  background: var(--secondary-color);
-}
-
-.order-status.completato {
-  border-color: rgb(142, 221, 22);
-}
-
-.order-status.in-attesa {
-  border-color: var(--primary-color);
-}
-
-.order-status.parziale {
-  border-color: rgb(255, 193, 7)
-}
-
-.order-details {
-  padding: 0.75rem;
-  border-top: 1px solid #eee;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.items-list {
-  list-style: none;
+:deep(.p-card-body) {
   padding: 0;
-  margin: 0 0 0.75rem 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.5rem;
 }
 
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  margin-bottom: 0.5rem;
-  color: white;
-}
-
-.order-item:last-child {
-  border-bottom: none;
-}
-
-.item-name {
-  color: white;
-  font-size: 0.95rem;
-  margin-right: 0.5rem;
-}
-
-.item-quantity {
-  color: white;
-  font-weight: 500;
-  font-size: 0.95rem;
-  min-width: 2.5rem;
-  text-align: right;
-}
-
-.order-total {
-  text-align: right;
-  color: white;
-  font-size: 1.2rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.home-link {
-  display: block;
-  text-align: center;
+:deep(.p-card-content) {
   padding: 1rem;
-  color: rgba(0, 0, 0, 0.8);
-  text-decoration: none;
-  background: #f1f1f1;
-  border-radius: 12px;
-  margin: 0 auto;
-  max-width: 200px;
-  transition: all 0.3s ease;
-}
-
-.action-buttons {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  display: flex;
-  gap: 1rem;
-}
-
-h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.home-link:hover {
-  transform: translateY(-2px)
-}
-
-
-@media (max-width: 768px) {
-  .history-container {
-    padding: 1rem;
-  }
-
-  .header {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .footer {
-    padding: 1rem;
-  }
-
-  .footer-buttons {
-    padding-right: 1rem;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .export-btn {
-    width: auto;
-    min-width: 150px; 
-  }
 }
 </style>

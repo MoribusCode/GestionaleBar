@@ -2,6 +2,9 @@
 import { ref, onMounted, defineProps } from 'vue';
 import { io } from 'socket.io-client';
 import axios from 'axios';
+import Card from 'primevue/card';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 import { API_BASE_URL, SOCKET_PATH, SOCKET_URL } from '@/store';
 
 const props = defineProps({
@@ -108,260 +111,84 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="workstation-container">
-    <h1 class="workstation-title">Ordini da preparare - {{ props.category }}</h1>
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-4">
+    <div class="rounded-2xl border-2 border-slate-200/70 bg-white/85 p-4 backdrop-blur-sm">
+      <h1 class="text-center text-3xl font-black capitalize text-zinc-900">Ordini da preparare - {{ props.category }}</h1>
+    </div>
 
-    <div class="orders-grid">
-      <div v-for="order in orders" :key="order.id" class="order-card">
-        <div class="order-header">
-          <h3 class="order-id">Ordine #{{ order.id }}</h3>
-          <button class="close-btn" @click="closeOrder(order.id, props.category)">
-            Completa
-          </button>
-        </div>
-
-        <div class="order-note" v-if="order.note">
-          <span class="note-label">Nota:</span>
-          {{ order.note }}
-        </div>
-
-        <div class="items-list">
-          <div v-for="item in order.items" :key="item.name" class="order-item">
-            <span class="item-name">{{ item.name }}</span>
-            <span class="item-quantity">x{{ item.quantity }}</span>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <Card v-for="order in orders" :key="order.id" class="rounded-2xl border-2 border-slate-200/70 bg-white/85 backdrop-blur-sm">
+        <template #content>
+          <div class="mb-3 flex items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <h3 class="text-lg font-bold text-zinc-900">Ordine #{{ order.id }}</h3>
+            <Button label="Completa" size="small" @click="closeOrder(order.id, props.category)" />
           </div>
-        </div>
-      </div>
+
+          <div v-if="order.note" class="mb-3 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-zinc-700">
+            <span class="font-semibold text-zinc-800">Nota:</span>
+            {{ order.note }}
+          </div>
+
+          <div class="space-y-2">
+            <div v-for="item in order.items" :key="item.name" class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
+              <span class="text-sm font-medium text-zinc-800">{{ item.name }}</span>
+              <span class="text-sm font-semibold text-zinc-700">x{{ item.quantity }}</span>
+            </div>
+          </div>
+        </template>
+      </Card>
     </div>
 
-    <div v-if="showConfirmDialog" class="overlay">
-      <div class="dialog">
-        <h3>Conferma chiusura</h3>
-        <p>Sei sicuro di voler chiudere l'ordine #{{ orderToClose?.id }}?</p>
-        <div class="dialog-actions">
-          <button class="cancel-btn" @click="handleCancel">Annulla</button>
-          <button class="confirm-btn" @click="handleConfirm">Conferma</button>
-        </div>
-      </div>
+    <div v-if="orders.length === 0" class="rounded-2xl border-2 border-slate-200/70 bg-white/85 p-8 text-center text-zinc-500 backdrop-blur-sm">
+      Nessun ordine in attesa.
     </div>
+
+    <Dialog
+      v-model:visible="showConfirmDialog"
+      modal
+      header="Conferma completamento"
+      :draggable="false"
+      class="dialog w-[92vw] max-w-lg"
+      :pt="{ 
+        header: { class: 'p-6 pb-4' },
+        content: { class: 'p-6 pt-0' },
+        footer: { class: 'p-6 pt-4' }, 
+        closeButton: { class: 'flex h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:shadow-none focus:ring-0', style: 'outline:none;box-shadow:none' } 
+      }"
+    >
+      <div class="p-2">
+        <p class="text-sm text-slate-700">
+          Sei sicuro di voler contrassegnare come completati gli articoli in <span class="font-semibold text-slate-900">{{ props.category }}</span> per l'ordine <span class="font-semibold text-slate-900">#{{ orderToClose?.id }}</span>?
+        </p>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <Button
+            label="Annulla"
+            severity="secondary"
+            outlined
+            class="rounded-full border-slate-300 px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-100 hover:border-slate-400"
+            @click="handleCancel"
+          />
+          <Button
+            label="Completa"
+            icon="pi pi-check"
+            class="rounded-full bg-slate-800 px-5 py-2.5 font-semibold text-white hover:bg-slate-900"
+            @click="handleConfirm"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <style scoped>
-.workstation-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-  min-height: 100vh;
+:deep(.p-card-body) {
+  padding: 0;
 }
 
-.workstation-title {
-  color: black;
-  margin-bottom: 2rem;
-  text-align: center;
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-transform: capitalize;
-}
-
-.orders-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.order-card {
-  position: relative;
-  background-color: var(--secondary-color);
-  border-radius: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  will-change: transform;
-}
-
-.order-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.order-header {
-  background: var(--secondary-color);
+:deep(.p-card-content) {
   padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #555;
-}
-
-.order-id {
-  margin: 0;
-  color: white;
-  font-size: 1.2rem;
-}
-
-.close-btn {
-  background: var(--secondary-color);
-  color: white;
-  border-width: 1px;
-  border-color: var(--primary-color);
-  border-style: solid;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.close-btn:hover {
-  background: #333333;
-}
-
-.order-note {
-  border-color: white;
-  border-style: solid;
-  border-width: 1px;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  background: #333333;
-  color: #d3d3d3;
-  font-size: 0.9rem;
-}
-
-.note-label {
-  font-weight: 600;
-  margin-right: 0.5rem;
-  color: #d3d3d3;
-}
-
-.items-list {
-  padding: 1rem;
-}
-
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  border-bottom: 1px solid #555;
-}
-
-.order-item:last-child {
-  border-bottom: none;
-}
-
-.item-name {
-  color: white;
-  font-weight: 500;
-}
-
-.item-quantity {
-  background: #3333;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  color: white;
-  font-weight: 600;
-}
-
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.dialog {
-  background: #4A4A4A;
-  border-radius: 20px;
-  padding: 1.5rem;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  animation: slideIn 0.2s ease;
-}
-
-.dialog h3 {
-  margin: 0 0 1rem 0;
-  color: white;
-}
-
-.dialog p {
-  margin: 0 0 1.5rem 0;
-  color: #ffffff;
-}
-
-.dialog-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.cancel-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.confirm-btn {
-  padding: 0.5rem 1rem;
-  border-width: 1px;
-  border-color: white;
-  border-style: solid;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.cancel-btn {
-  background: var(--primary-color);
-  color: white;
-}
-
-.cancel-btn:hover {
-  background: var(--primary-hover);
-}
-
-.confirm-btn {
-  background: #4a4a4a;
-  color: white;
-}
-
-.confirm-btn:hover {
-  background: #333333;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@media (max-width: 768px) {
-  .workstation-container {
-    padding: 1rem;
-  }
-
-  .orders-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .workstation-title {
-    font-size: 1.5rem;
-  }
 }
 </style>

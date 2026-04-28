@@ -10,6 +10,7 @@ import './assets/main.css'
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
 import 'primeicons/primeicons.css';
+import 'chart.js/auto';
 
 const pinia = createPinia()
 const app = createApp(App)
