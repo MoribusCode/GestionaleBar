@@ -17,7 +17,7 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL,
       price REAL NOT NULL,
-      category TEXT,
+      category TEXT NOT NULL,
       note TEXT,
       minimum_stock INTEGER NOT NULL DEFAULT 0,
       practical_unit TEXT NOT NULL,    -- unità di misura (es. pezzi, confezioni, bottiglie etc.)

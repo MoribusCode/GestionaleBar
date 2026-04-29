@@ -20,7 +20,6 @@ const deleteConfirm = ref(false);
 const itemToDelete = ref(null);
 
 const categories = ref(['Cicchetti', 'Spina', 'Bar', 'Drinks']);
-const units = ref(['pezzi', 'confezioni', 'bottiglie', 'bicchieri', 'ml', 'cl', 'l', 'kg', 'g']);
 
 const formData = ref({
   name: '',
@@ -304,10 +303,9 @@ onMounted(() => {
               Unità di misura
               <span class="required-badge">obbligatorio</span>
             </label>
-            <Dropdown
+            <InputText
               v-model="formData.practical_unit"
-              :options="units"
-              placeholder="Seleziona unità"
+              placeholder="Inserisci unità (es. pezzi, litri...)"
               class="field-input w-full"
               required
             />
