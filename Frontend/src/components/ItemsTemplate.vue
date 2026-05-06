@@ -44,7 +44,7 @@ const groupedItems = computed(() => {
           :key="item.id"
           @click="addItem(item)"
           :label="item.name"
-          class="h-8! w-full! justify-start! rounded-md! border! border-slate-200! bg-slate-50/80! px-2! py-0! text-left! text-sm! font-medium! text-zinc-700! hover:bg-slate-100!"
+          class="h-8! w-full! shrink-0! justify-start! rounded-md! border! border-slate-200! bg-slate-50/80! px-2! py-0! text-left! text-sm! font-medium! text-zinc-700! hover:bg-slate-100!"
         />
       </div>
     </div>
