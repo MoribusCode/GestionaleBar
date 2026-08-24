@@ -29,11 +29,16 @@ db.serialize(() => {
   // Tabella ordini (orders), per ora la togliamo
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
-      order_id INTEGER PRIMARY KEY,
+      order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      bar_id INTEGER NOT NULL,
+      order_number INTEGER NOT NULL,
       status TEXT DEFAULT 'in attesa',
       total_price DECIMAL(10,2),
       note TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+      FOREIGN KEY (bar_id) REFERENCES bar(id),
+      UNIQUE (bar_id, order_number)
     )
   `);
 
@@ -44,8 +49,9 @@ db.serialize(() => {
       order_id INTEGER,
       item_name TEXT,
       quantity INTEGER,
+      price DECIMAL(10,2),
       status TEXT DEFAULT 'in attesa',
-      FOREIGN KEY (order_id) REFERENCES orders(id)
+      FOREIGN KEY (order_id) REFERENCES orders(order_id)
     )
   `);
 
@@ -53,6 +59,7 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY,
+      bar_id INTEGER NOT NULL,
       username TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
       role TEXT DEFAULT 'user',
@@ -77,6 +84,15 @@ db.serialize(() => {
       amount DECIMAL(10,2) NOT NULL,
       type TEXT NOT NULL CHECK(type IN ('IN', 'OUT')),
       description TEXT
+    )
+  `);
+  // Tabella bar
+  db.run(`
+    CREATE TABLE IF NOT EXISTS bar (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      printer_ip TEXT NOT NULL DEFAULT '0.0.0.0',
+      order_number INTEGER NOT NULL DEFAULT 0,
+      categories TEXT NOT NULL DEFAULT '[]',
     )
   `);
 

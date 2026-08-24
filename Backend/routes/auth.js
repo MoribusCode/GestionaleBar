@@ -62,7 +62,8 @@ module.exports = function (fastify, opts, done) {
 
             const token = await fastify.jwt.sign({
                 username: user.username,
-                role: user.role
+                role: user.role,
+                bar_id: user.bar_id
             });
 
             reply.setCookie('token', token, {

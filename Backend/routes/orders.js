@@ -17,6 +17,8 @@ module.exports = function (fastify, opts, done) {
     // GET all orders
     fastify.get("/orders", async (request, reply) => {
         try {
+            const barId = request.user.bar_id;
+
             const rows = await dbAll(`
             SELECT  
                 o.order_id as id,
@@ -32,8 +34,9 @@ module.exports = function (fastify, opts, done) {
             FROM orders o
             JOIN order_items oi
                 ON oi.order_id = o.order_id
+            WHERE o.bar_id = ?
             GROUP BY oi.order_id
-            `);
+            `, [barId]);
 
             const orders = rows.map(row => ({
                 ...row,
@@ -50,6 +53,7 @@ module.exports = function (fastify, opts, done) {
     // GET all pending orders (solo quelli non ancora completati)
     fastify.get("/orders/pending", async (request, reply) => {
         try {
+            const barId = request.user.bar_id;
             const rows = await dbAll(`
             SELECT 
                 o.order_id, 
@@ -61,8 +65,8 @@ module.exports = function (fastify, opts, done) {
             FROM orders o
             LEFT JOIN order_items oi ON o.order_id = oi.order_id
             LEFT JOIN items i ON oi.item_name = i.name
-            WHERE oi.status = 'in attesa'
-            `);
+            WHERE oi.status = 'in attesa' AND o.bar_id = ?
+            `, [barId]);
 
             // Raggruppiamo per ordine
             const grouped = rows.reduce((acc, row) => {
@@ -100,10 +104,21 @@ module.exports = function (fastify, opts, done) {
         try {
             const totalPrice = request.body.totalPrice || 0;
             const note = request.body.note || '';
-            await dbRun('INSERT INTO orders (total_price,note) VALUES (?,?)', [totalPrice, note]);
+            const barId = request.user.bar_id;
+            
+            const updateBar = await dbGet(`
+                UPDATE bar
+                SET order_number = order_number + 1
+                WHERE id = ?
+                RETURNING order_number, printer_ip
+            `, [barId]);
 
-            const row = await dbGet("SELECT MAX(order_id) AS order_id FROM orders");
-            const orderId = row.order_id;
+            const order_number = updateBar.order_number;
+            const printer_ip = updateBar.printer_ip;
+
+            const orderResult = await dbRun('INSERT INTO orders (total_price, note, bar_id, order_number) VALUES (?, ?, ?, ?)', 
+                [totalPrice, note, barId, order_number]
+            );
 
             const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity) VALUES (?, ?, ?)');
 
@@ -111,25 +126,27 @@ module.exports = function (fastify, opts, done) {
             const stmtRun = util.promisify(insertItem.run).bind(insertItem);
 
             for (const item of request.body.order) {
-                await stmtRun(orderId, item.name, item.quantity);
+                await stmtRun(orderResult.order_id, item.name, item.quantity);
             }
 
             insertItem.finalize(); // Clean up statement
 
             // Alla fine di TUTTO, emetto evento websocket con ordine
             const orderData = {
-                id: orderId,
+                id: orderResult.order_id,
+                order_number: order_number,
                 items: request.body.order,
-                note
+                note: note,
+                totalPrice: totalPrice
             };
 
             fastify.io.emit('new-order', orderData);  // fastify.io è il websocket server (socket.io)
 
             return reply.status(201).send({
-                id: orderId,
+                id: orderResult.order_id,
                 status: "pending",
                 items: request.body.order,
-                note
+                note: note
             });
 
         } catch (err) {
