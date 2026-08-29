@@ -88,8 +88,11 @@ onUnmounted(() => {
       <ul class="h-80 space-y-2 overflow-y-auto rounded-2xl border-2 border-slate-200/70 bg-slate-50/80 p-3">
         <li class="rounded-md border border-slate-200 bg-white/90 p-2" v-for="(item, index) in list" :key="index">
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-sm font-medium text-zinc-800">{{ item.name }} x{{ item.quantity }}</span>
-            <Button @click="removeItem(index)" label="-" class="h-7! w-7! rounded-md! border! border-slate-300! bg-slate-200! p-0! text-zinc-800! hover:bg-slate-300!" />
+            <span class="truncate text-sm font-medium text-zinc-800"><span class="font-extrabold">{{ item.quantity }}  </span> {{ item.name }}</span>
+            <div class="flex shrink-0 items-center gap-2">
+              <span class="text-sm font-medium text-zinc-800">€{{ (item.price * item.quantity).toFixed(2) }}</span>
+              <Button @click="removeItem(index)" label="-" class="h-7! w-7! rounded-md! border! border-slate-300! bg-slate-200! p-0! text-zinc-800! hover:bg-slate-300!" />
+            </div>
           </div>
         </li>
       </ul>

@@ -12,6 +12,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@iconify/vue": "^5.0.1",
     "@primeuix/themes": "^2.0.3",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.11.0",

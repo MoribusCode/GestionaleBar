@@ -15,6 +15,10 @@ module.exports = function (fastify, opts, done) {
             try {
                 const { username, password, role, bar_id } = request.body;
 
+                if (role === 'admin' && bar_id) {
+                    return reply.code(400).send({ error: 'Un admin non può essere associato a un bar' });
+                }
+
                 // Hash the admin password
                 const saltRounds = 10;
                 const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -26,7 +30,8 @@ module.exports = function (fastify, opts, done) {
                 reply.code(201).send("utente creato con successo");
             }
             catch (err) {
-                reply.code(500).send({ error: 'Internal Server Error' });
+                console.error('Errore creazione utente:', err.message);
+                reply.code(500).send({ error: err.message });
             }
         });
 
@@ -35,7 +40,7 @@ module.exports = function (fastify, opts, done) {
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
 
             try {
-                const users = await dbAll('SELECT id, username, role FROM users');
+                const users = await dbAll('SELECT id, username, role, bar_id FROM users');
                 return { users };
 
             } catch (err) {
@@ -62,6 +67,39 @@ module.exports = function (fastify, opts, done) {
             }
         });
 
+
+    // endpoint per aggiornare un utente
+    fastify.put('/update-user/:id',
+        { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
+
+            try {
+                const { id } = request.params;
+                const { username, password, role, bar_id } = request.body;
+
+                if (role === 'admin' && bar_id) {
+                    return reply.code(400).send({ error: 'Un admin non può essere associato a un bar' });
+                }
+
+                const fields = ['username = ?', 'role = ?', 'bar_id = ?'];
+                const values = [username, role, bar_id];
+
+                if (password) {
+                    const saltRounds = 10;
+                    const hashedPassword = await bcrypt.hash(password, saltRounds);
+                    fields.push('password = ?');
+                    values.push(hashedPassword);
+                }
+
+                values.push(id);
+
+                await dbRun(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+
+                reply.code(200).send({ message: 'Utente aggiornato con successo' });
+            } catch (err) {
+                console.error('Errore aggiornamento utente:', err.message);
+                reply.code(500).send({ error: err.message });
+            }
+        });
 
     // endpoint per eliminare un utente
     fastify.delete('/delete-user/:id',

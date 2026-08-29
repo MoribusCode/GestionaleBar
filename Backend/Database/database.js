@@ -22,7 +22,10 @@ db.serialize(() => {
       minimum_stock INTEGER NOT NULL DEFAULT 0,
       practical_unit TEXT NOT NULL,    -- unità di misura (es. pezzi, confezioni, bottiglie etc.)
       item_sale BOOLEAN DEFAULT 0,     -- flag per item in vendita
-      item_purchase BOOLEAN DEFAULT 0  -- flag per item da acquistare (in inventario)
+      item_purchase BOOLEAN DEFAULT 0, -- flag per item da acquistare (in inventario)
+      item_favorite BOOLEAN DEFAULT 0, -- flag per item preferito (mostrato più grande in cassa)
+      image_data BLOB,                 -- immagine dell'articolo, caricata da Gestione Articoli
+      image_mime_type TEXT             -- content-type dell'immagine (es. image/png)
     )
   `);
 

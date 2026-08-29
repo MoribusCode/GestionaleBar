@@ -18,12 +18,38 @@ const router = createRouter({
     },
     {
       path: '/admin',
-      name: 'admin',
-      component: () => import('@/views/AdminDashboard.vue'),
-      meta: { 
+      component: () => import('@/views/AdminLayout.vue'),
+      meta: {
         requiresAuth: true,
-        roles: ['admin']  
-      }
+        roles: ['admin']
+      },
+      children: [
+        {
+          path: '',
+          name: 'admin',
+          component: () => import('@/views/AdminDashboard.vue')
+        },
+        {
+          path: 'items-management',
+          name: 'items-management',
+          component: () => import('@/views/ItemsManagement.vue')
+        },
+        {
+          path: 'users-management',
+          name: 'users-management',
+          component: () => import('@/views/UsersManagement.vue')
+        },
+        {
+          path: 'bars-management',
+          name: 'bars-management',
+          component: () => import('@/views/BarsManagement.vue')
+        },
+        {
+          path: 'inventory-planning',
+          name: 'inventory-planning',
+          component: () => import('@/views/InventoryPlanningView.vue')
+        }
+      ]
     },
     {
       path: '/orders',
@@ -87,24 +113,6 @@ const router = createRouter({
         roles: ['Drinks']
       }
     },
-    {
-      path: '/items-management',
-      name: 'items-management',
-      component: () => import('@/views/ItemsManagement.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['admin']
-      }
-    },
-    {
-      path: '/inventory-planning',
-      name: 'inventory-planning',
-      component: () => import('@/views/InventoryPlanningView.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['admin']
-      }
-    }
   ]
 })
 

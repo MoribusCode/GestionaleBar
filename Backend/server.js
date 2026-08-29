@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const fastify = require("fastify") ({ logger: true });
 const cors = require("@fastify/cors");
+const multipart = require("@fastify/multipart");
 const { Server } = require("socket.io");  // socket.io server class
 const { instrument } = require("@socket.io/admin-ui"); // Admin UI per monitorare le connessioni al socket
 
@@ -13,7 +14,12 @@ fastify.register (cors, {
   allowedHeaders: ['Content-Type', 'Authorization'],
 });
 
-// Register cookie plugin 
+
+fastify.register(multipart, {
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+// Register cookie plugin
 fastify.register(require("./plugins/cookie"));
 
 // Register JWT plugin
