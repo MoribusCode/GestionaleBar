@@ -55,12 +55,39 @@ module.exports = function (fastify, opts, done) {
         });
 
     // GET - endpoint per fetchare tutti gli item dal db nel catalogo (solo quelli in vendita)
+<<<<<<< Updated upstream
     fastify.get("/get-items-catalog", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         try {
             if (request.user.role === 'admin') {
                 const items = await dbAll(`SELECT ${ITEM_COLUMNS} FROM items WHERE item_sale = 1`);
+=======
+    fastify.get("/get-items-catalog", 
+        { preHandler: fastify.authorize ([]) }, async (request, reply) => {
+            try {
+                if (request.user.role === 'admin') {
+                    const items = await dbAll("SELECT * FROM items where item_sale = 1");
+                    return { items };
+                }
+
+                const bar = await dbGet("SELECT categories FROM bar WHERE id = ?", [request.user.bar_id]);
+                if (!bar) return reply.code(404).send({ error: "Bar non trovato" });
+
+                const categories = JSON.parse(bar.categories);
+                if (categories.length === 0) return { items: [] };
+
+                const placeholders = categories.map(() => '?').join(',');
+                const items = await dbAll(
+                    `SELECT * FROM items WHERE category IN (${placeholders}) AND item_sale = 1`,
+                    categories
+                );
+>>>>>>> Stashed changes
                 return { items };
+
+            } catch (err) {
+                console.error("Errore durante il recupero degli articoli:", err.message);
+                return reply.status(500).send({ error: err.message });
             }
+<<<<<<< Updated upstream
 
             const bar = await dbGet("SELECT categories FROM bar WHERE id = ?", [request.user.bar_id]);
             if (!bar) return reply.code(404).send({ error: "Bar non trovato" });
@@ -81,6 +108,9 @@ module.exports = function (fastify, opts, done) {
             return reply.status(500).send({ error: err.message });
         }
     });
+=======
+        });
+>>>>>>> Stashed changes
 
     
     // GET - restituisce l'immagine (blob) di un articolo, con cache lato browser
@@ -131,10 +161,17 @@ module.exports = function (fastify, opts, done) {
             try {
                 const { name, price, category, note, min_stock, practical_unit, flag_sale, flag_purchase, flag_favorite } = request.body;
 
+<<<<<<< Updated upstream
                 const result = await dbRunWithResult(`INSERT INTO items
                 (name, price, category, note, minimum_stock, practical_unit, item_sale, item_purchase, item_favorite)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [name, price, category, note, min_stock, practical_unit, flag_sale, flag_purchase, flag_favorite]
+=======
+                const item = await dbRun(`INSERT INTO items 
+                    (name, price, category, note, minimum_stock, practical_unit, item_sale, item_purchase) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [name, price, category, note, min_stock, practical_unit, flag_sale, flag_purchase]
+>>>>>>> Stashed changes
                 );
 
                 reply.code(201).send({ message: "articolo creato con successo", id: result.lastID });
@@ -154,7 +191,7 @@ module.exports = function (fastify, opts, done) {
                 // mappo gli oggetti (dizionario)
                 const fieldMap = {
                     name: 'name',
-                    price: 'price',
+                    price: 'price', 
                     category: 'category',
                     note: 'note',
                     min_stock: 'minimum_stock',
@@ -163,20 +200,19 @@ module.exports = function (fastify, opts, done) {
                     flag_purchase: 'item_purchase',
                     flag_favorite: 'item_favorite'
                 };
-
+            
                 const updateFields = [];
                 const values = [];
 
                 for (const [key, value] of Object.entries(data)) {
-
-                    if (fieldMap[key] && value !== undefined) {
+                    if (fieldMap[key] && value !== undefined ) {
                         updateFields.push(`${fieldMap[key]} = ?`),
-                            values.push(value);
+                        values.push(value);
                     }
                 }
 
                 if (updateFields.length === 0) {
-                    return reply.code(400).send({ message: "No valid field to update" });
+                    return reply.code(400).send({ message: "No valid field to update"});
                 }
 
                 values.push(id);
@@ -205,6 +241,6 @@ module.exports = function (fastify, opts, done) {
                 reply.code(500).send({ error: err.message });
             }
         });
-
-    done();
+        
+    done ();
 }

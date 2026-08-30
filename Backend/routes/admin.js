@@ -38,7 +38,6 @@ module.exports = function (fastify, opts, done) {
     // endpoint che mi restituisce tutti gli utenti
     fastify.get('/users',
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
-
             try {
                 const users = await dbAll('SELECT id, username, role, bar_id FROM users');
                 return { users };
@@ -51,16 +50,16 @@ module.exports = function (fastify, opts, done) {
     fastify.get('/bars',
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
             try {
-                let bars = await dbAll('SELECT * FROM bar');
+                const bars = await dbAll('SELECT * FROM bar');
                 
-               bars = bars.map(bar => {
+                const parsedBars = bars.map(bar => {
                     return {
                         ...bar,
                         categories: JSON.parse(bar.categories)
                     };
                 });
 
-                return { bars };
+                return { bars: parsedBars };
 
             } catch (err) {
                 reply.code(500).send({ error: 'Internal Server Error' });
@@ -104,7 +103,6 @@ module.exports = function (fastify, opts, done) {
     // endpoint per eliminare un utente
     fastify.delete('/delete-user/:id',
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
-
             try {
                 const { id } = request.params;
                 await dbRun('DELETE FROM users WHERE id = ?',
