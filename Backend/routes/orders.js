@@ -14,6 +14,15 @@ module.exports = function (fastify, opts, done) {
     const dbRun = util.promisify(db.run).bind(db);
     const dbGet = util.promisify(db.get).bind(db);
 
+    function dbRunWithResult(sql, params) {
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, function (err) {
+                if (err) return reject(err);
+                resolve({ lastID: this.lastID, changes: this.changes });
+            });
+        });
+    }
+
     // GET all orders
     fastify.get("/orders", async (request, reply) => {
         try {
@@ -116,9 +125,10 @@ module.exports = function (fastify, opts, done) {
             const order_number = updateBar.order_number;
             const printer_ip = updateBar.printer_ip;
 
-            const orderResult = await dbRun('INSERT INTO orders (total_price, note, bar_id, order_number) VALUES (?, ?, ?, ?)', 
+            const orderResult = await dbRunWithResult('INSERT INTO orders (total_price, note, bar_id, order_number) VALUES (?, ?, ?, ?)',
                 [totalPrice, note, barId, order_number]
             );
+            const orderId = orderResult.lastID;
 
             const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity) VALUES (?, ?, ?)');
 
@@ -126,24 +136,25 @@ module.exports = function (fastify, opts, done) {
             const stmtRun = util.promisify(insertItem.run).bind(insertItem);
 
             for (const item of request.body.order) {
-                await stmtRun(orderResult.order_id, item.name, item.quantity);
+                await stmtRun(orderId, item.name, item.quantity);
             }
 
             insertItem.finalize(); // Clean up statement
 
             // Alla fine di TUTTO, emetto evento websocket con ordine
             const orderData = {
-                id: orderResult.order_id,
+                id: orderId,
                 order_number: order_number,
                 items: request.body.order,
                 note: note,
                 totalPrice: totalPrice
             };
 
-            fastify.io.emit('new-order', orderData);  // fastify.io è il websocket server (socket.io)
+    
+            fastify.io.to(`bar-${barId}`).emit('new-order', orderData);
 
             return reply.status(201).send({
-                id: orderResult.order_id,
+                id: orderId,
                 status: "pending",
                 items: request.body.order,
                 note: note

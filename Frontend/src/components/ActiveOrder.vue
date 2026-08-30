@@ -91,7 +91,7 @@ onUnmounted(() => {
             <span class="truncate text-sm font-medium text-zinc-800"><span class="font-extrabold">{{ item.quantity }}  </span> {{ item.name }}</span>
             <div class="flex shrink-0 items-center gap-2">
               <span class="text-sm font-medium text-zinc-800">€{{ (item.price * item.quantity).toFixed(2) }}</span>
-              <Button @click="removeItem(index)" label="-" class="h-7! w-7! rounded-md! border! border-slate-300! bg-slate-200! p-0! text-zinc-800! hover:bg-slate-300!" />
+              <Button @click="removeItem(index)" label="-" class="h-7! w-7! rounded-md! border! border-red-100! bg-red-50! p-0! text-red-400! hover:bg-red-100!" />
             </div>
           </div>
         </li>
@@ -112,7 +112,7 @@ onUnmounted(() => {
     </div>
 
     <div class="flex gap-3">
-      <Button @click="clean" label="Cancella" class="h-10! flex-1! rounded-lg! border! border-zinc-200! bg-zinc-200! font-bold! text-zinc-500! hover:bg-zinc-300!" />
+      <Button @click="clean" label="Cancella" class="h-10! flex-1! rounded-lg! border! border-red-100! bg-red-50! font-bold! text-red-400! hover:bg-red-100!" />
       <Button @click="storeOrder" label="Conferma" class="h-10! flex-1! rounded-lg! border! border-zinc-200! bg-white! font-bold! text-zinc-900! hover:bg-zinc-100!" />
     </div>
 

@@ -5,6 +5,7 @@ const cors = require("@fastify/cors");
 const multipart = require("@fastify/multipart");
 const { Server } = require("socket.io");  // socket.io server class
 const { instrument } = require("@socket.io/admin-ui"); // Admin UI per monitorare le connessioni al socket
+const { parse: parseCookies } = require("@fastify/cookie");
 
 // Enable CORS (so the frontend can communicate with the backend)
 fastify.register (cors, {
@@ -68,8 +69,29 @@ const start = async () => {
       mode: "production",
     });
 
+  
+    //Come per auth intecetto la richiesta di connessione per associare l'utente al socket
+    io.use((socket, next) => {
+      try {
+        const { token } = parseCookies(socket.handshake.headers.cookie || '');
+        if (token) {
+          socket.data.user = fastify.jwt.verify(token);
+        }
+      } catch (err) {
+        console.error("Socket JWT verification error:", err.message);
+      }
+
+      next();
+    });
+
     io.on("connection", (socket) => {
-      console.log("Nuovo client connesso", socket.id);
+      const barId = socket.data.user?.bar_id;
+
+      if (barId) {
+        socket.join(`bar-${barId}`);
+      }
+
+      console.log("Nuovo client connesso", socket.id, barId ? `(bar ${barId})` : '(nessun bar)');
 
       socket.on("disconnect", (reason) => {
         console.log("Client disconnesso, motivo:", reason);
