@@ -6,9 +6,6 @@ import router from './router'
 // main CSS file con anche l'import di Tailwind
 import './assets/main.css'
 
-// stile condiviso dalle pagine di gestione admin (Items/Users/Bars Management)
-import './assets/management-dialog.css'
-
 // import di PrimeVue, il Tema e le Icone
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
