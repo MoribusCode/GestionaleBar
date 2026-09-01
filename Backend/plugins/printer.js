@@ -1,16 +1,19 @@
+const fp = require('fastify-plugin'); 
 const ThermalPrinter = require("node-thermal-printer").printer;
 const PrinterTypes = require("node-thermal-printer").types;
 
-module.exports = fp (async (fastify, opts) => {
+module.exports = fp(async (fastify, opts) => {
 
-    // Inizializzo la stampante 
-    const printer = new ThermalPrinter({
-        type: PrinterTypes.EPSON,  
-        interface: process.env.PRINTER_INTERFACE || '/dev/usb/lp0',
-        characterSet: 'PC858_EURO'
-    });
+    const stampaScontrino = async (orderData, ip) => {
 
-    const stampaScontrino = async (datiOrdine) => {
+        console.log (ip);
+        
+        // Inizializzo la stampante 
+        const printer = new ThermalPrinter({
+            type: PrinterTypes.EPSON,
+            interface: ip || '/dev/usb/lp0',
+            characterSet: 'PC858_EURO'
+        });
 
         // Controllo se la stampante è pronta
         let isPrinterConnected = await printer.isPrinterConnected();
@@ -23,15 +26,19 @@ module.exports = fp (async (fastify, opts) => {
         printer.println("Scontrino");
         printer.drawLine();
         printer.alignCenter();
-        printer.println (`Ordine n. ${datiOrdine.orderID}`);
+        printer.println(`Ordine n. ${orderData.id}`);
         printer.alignCenter();
-        printer.println (`BAR H`);
+        printer.println(`BAR H`);
         printer.drawLine();
-        for (const item of datiOrdine.items) {
+
+        const category = sortByCategory(orderData.items);
+        console.log (category);
+
+        for (const item of orderData.items) {
             printer.println(`${item.name} x${item.quantity} - ${item.price}€`);
         }
         printer.drawLine();
-        printer.println(`Totale: ${datiOrdine.total}€`);
+        printer.println(`Totale: ${orderData.totalPrice}€`);
         printer.cut();
 
         // Invio il comando di stampa alla stampante
@@ -42,6 +49,20 @@ module.exports = fp (async (fastify, opts) => {
             console.error("Errore durante la stampa:", error);
             throw new Error("Errore durante la stampa");
         }
+    };
+
+    function sortByCategory(items) {
+
+        const groups = {};
+        for (const item of items) {
+
+            const key = item.category?.toLowerCase() || ''
+            groups[key] ??= []
+            groups[key].push(item)
+        }
+        return groups;
     }
+
+    fastify.decorate('printer', { stampaScontrino });
 
 });

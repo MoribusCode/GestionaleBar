@@ -26,6 +26,9 @@ fastify.register(require("./plugins/cookie"));
 // Register JWT plugin
 fastify.register(require("./plugins/jwt"));
 
+// Register printer plugin
+fastify.register(require("./plugins/printer"));
+
 // Register routes 
 fastify.register(require("./routes/admin"), {prefix: "/api"});
 fastify.register(require ("./routes/auth"), {prefix: "/api"});

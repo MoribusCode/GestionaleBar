@@ -141,16 +141,22 @@ module.exports = function (fastify, opts, done) {
 
             insertItem.finalize(); // Clean up statement
 
-            // Alla fine di TUTTO, emetto evento websocket con ordine
+            // creo oggetto con i dati dell'ordine e i campi degli item che vengono inviati, mappati per lo scontrino
             const orderData = {
                 id: orderId,
                 order_number: order_number,
-                items: request.body.order,
+                items: request.body.order.map (item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: Number(item.price || 0),
+                    category: item.category
+                })),
                 note: note,
                 totalPrice: totalPrice
             };
 
-    
+            await fastify.printer.stampaScontrino(orderData, printer_ip);
+
             fastify.io.to(`bar-${barId}`).emit('new-order', orderData);
 
             return reply.status(201).send({
