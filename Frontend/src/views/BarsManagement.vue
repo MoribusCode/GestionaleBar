@@ -5,9 +5,11 @@ import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import ManagementTemplate from '@/components/ManagementTemplate.vue';
-import { API_BASE_URL, ITEM_CATEGORIES } from '@/store';
+import { useCategories } from '@/composables/useCategories';
+import { API_BASE_URL } from '@/store';
 
 const managementTemplate = ref(null);
+const { categoryNames, fetchCategories } = useCategories();
 
 const bars = ref();
 const selectedBar = ref(null);
@@ -103,6 +105,7 @@ const deleteBar = async () => {
 
 onMounted(() => {
   fetchBars();
+  fetchCategories();
 });
 </script>
 
@@ -176,7 +179,7 @@ onMounted(() => {
         <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600">Categorie</label>
         <div class="flex flex-wrap gap-2">
           <button
-            v-for="category in ITEM_CATEGORIES"
+            v-for="category in categoryNames"
             :key="category"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-semibold transition-colors"

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -7,7 +7,8 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Dropdown from 'primevue/dropdown';
 import ManagementTemplate from '@/components/ManagementTemplate.vue';
-import { API_BASE_URL, ITEM_CATEGORIES } from '@/store';
+import { useCategories } from '@/composables/useCategories';
+import { API_BASE_URL } from '@/store';
 
 const fieldClass = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-700 focus:bg-white';
 
@@ -20,10 +21,42 @@ function optionCardClass(active) {
 }
 
 const managementTemplate = ref(null);
+const { categoryNames, fetchCategories } = useCategories();
 
 const items = ref(); // undefined finché non arriva la prima risposta: la tabella lo interpreta come "in caricamento"
 const selectedItem = ref(null);
 const itemToDelete = ref(null);
+
+// Filtro tabella: ricerca per nome + categoria
+const searchQuery = ref('');
+
+// "all" e non "" / null: il Dropdown di PrimeVue tratta sia "" che null come "nessuna selezione"
+// e non mostrerebbe l'etichetta "Tutte le categorie" di default.
+const ALL_CATEGORIES = 'all';
+const categoryFilter = ref(ALL_CATEGORIES);
+
+const categoryFilterOptions = computed(() => [
+  { label: 'Tutte le categorie', value: ALL_CATEGORIES },
+  ...categoryNames.value.map((c) => ({ label: c, value: c })),
+]);
+
+const filteredItems = computed(() => {
+  if (items.value === undefined) return undefined;
+  const query = searchQuery.value.trim().toLowerCase();
+
+  return items.value.filter((item) => {
+
+    if (categoryFilter.value !== ALL_CATEGORIES && item.category !== categoryFilter.value) {
+      return false;
+    }
+
+    if (query && !item.name.toLowerCase().includes(query)) {
+      return false;
+    }
+
+    return true;
+  });
+});
 
 // immagine articolo: file scelto (non ancora caricato) + url per l'anteprima
 const selectedImageFile = ref(null);
@@ -61,8 +94,6 @@ async function uploadItemImage(itemId) {
     alert('Articolo salvato, ma il caricamento dell\'immagine è fallito');
   }
 }
-
-const categories = ref(ITEM_CATEGORIES);
 
 const formData = ref({
   name: '',
@@ -192,6 +223,7 @@ const deleteItem = async () => {
 
 onMounted(() => {
   fetchItems();
+  fetchCategories();
 });
 </script>
 
@@ -202,13 +234,31 @@ onMounted(() => {
     subtitle="Crea, modifica e gestisci tutti gli articoli del sistema"
     entity-name="Articolo"
     create-icon="pi pi-box"
-    :items="items"
+    :items="filteredItems"
     dialog-width-class="md:w-[680px]"
     @new="openCreateDialog"
     @submit="saveItem"
     @cancel-form="resetForm"
     @confirm-delete="deleteItem"
   >
+    <template #toolbar>
+      <div class="relative flex-1 min-w-[220px]">
+        <i class="pi pi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <InputText
+          v-model="searchQuery"
+          placeholder="Cerca per nome..."
+          class="w-full! rounded-xl! border! border-slate-200! bg-slate-50! py-2.5! pl-10! pr-3.5! text-sm! text-slate-800! outline-none!"
+        />
+      </div>
+      <Dropdown
+        v-model="categoryFilter"
+        :options="categoryFilterOptions"
+        optionLabel="label"
+        optionValue="value"
+        :class="[fieldClass, 'w-56!']"
+      />
+    </template>
+
     <template #columns>
       <Column header="Foto" style="width: 6%">
         <template #body="{ data }">
@@ -336,7 +386,7 @@ onMounted(() => {
           <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600">Categoria</label>
           <Dropdown
             v-model="formData.category"
-            :options="categories"
+            :options="categoryNames"
             placeholder="Seleziona categoria"
             :class="fieldClass"
           />

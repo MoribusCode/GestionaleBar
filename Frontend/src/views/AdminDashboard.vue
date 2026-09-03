@@ -37,6 +37,20 @@
                     </div>
                 </router-link>
 
+                <!-- Gestione Categorie -->
+                <router-link
+                    :to="{ name: 'categories-management' }"
+                    class="group flex aspect-square w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-slate-200/60 bg-white/80 p-5 text-center backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 sm:p-6 no-underline"
+                >
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14">
+                        <i class="pi pi-tags text-xl"></i>
+                    </span>
+                    <div>
+                        <p class="text-base font-semibold text-slate-900 sm:text-lg">Gestione Categorie</p>
+                        <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Crea e modifica le categorie</p>
+                    </div>
+                </router-link>
+
                 <!-- Gestisci Bar -->
                 <router-link
                     :to="{ name: 'bars-management' }"
@@ -48,6 +62,21 @@
                     <div>
                         <p class="text-base font-semibold text-slate-900 sm:text-lg">Gestisci Bar</p>
                         <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Visualizza e crea bar</p>
+                    </div>
+                </router-link>
+
+
+                <!-- Gestione Articoli -->
+                <router-link
+                    :to="{ name: 'items-management' }"
+                    class="group flex aspect-square w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-slate-200/60 bg-white/80 p-5 text-center backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 sm:p-6 no-underline"
+                >
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14">
+                        <i class="pi pi-wrench text-xl"></i>
+                    </span>
+                    <div>
+                        <p class="text-base font-semibold text-slate-900 sm:text-lg">Gestione Articoli</p>
+                        <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Crea, modifica gli articoli</p>
                     </div>
                 </router-link>
 
@@ -64,21 +93,6 @@
                         <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Scorte e fabbisogno acquisti</p>
                     </div>
                 </router-link>
-
-                <!-- Gestione Articoli -->
-                <router-link
-                    :to="{ name: 'items-management' }"
-                    class="group flex aspect-square w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-slate-200/60 bg-white/80 p-5 text-center backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 sm:p-6 no-underline"
-                >
-                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14">
-                        <i class="pi pi-wrench text-xl"></i>
-                    </span>
-                    <div>
-                        <p class="text-base font-semibold text-slate-900 sm:text-lg">Gestione Articoli</p>
-                        <p class="mt-1 text-xs text-slate-500 leading-snug sm:text-sm">Crea, modifica gli articoli</p>
-                    </div>
-                </router-link>
-
             </div>
 
 

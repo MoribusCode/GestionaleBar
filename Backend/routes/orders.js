@@ -5,9 +5,6 @@ module.exports = function (fastify, opts, done) {
     const db = require("../Database/database");
 
     const util = require("util");
-    const XLSX = require('xlsx');
-    const fs = require('fs');
-    const path = require('path');
 
     // Promisify DB methods
     const dbAll = util.promisify(db.all).bind(db);
@@ -26,26 +23,35 @@ module.exports = function (fastify, opts, done) {
     // GET all orders
     fastify.get("/orders", async (request, reply) => {
         try {
-            const barId = request.user.bar_id;
+            // admin: vede tutti i bar di default, oppure filtra per uno specifico bar_id in query;
+            // gli altri ruoli vedono sempre e solo il proprio bar.
+            const isAdmin = request.user.role === 'admin';
+            const barId = isAdmin ? (request.query.bar_id || null) : request.user.bar_id;
+
+            const whereClause = barId ? 'WHERE o.bar_id = ?' : '';
+            const params = barId ? [barId] : [];
 
             const rows = await dbAll(`
-            SELECT  
+            SELECT
                 o.order_id as id,
+                o.bar_id as barId,
                 o.status as status,
                 o.total_price as totalPrice,
                 o.created_at as createdAt,
                 json_group_array(
                     json_object(
-                        'name', oi.item_name, 
-                        'quantity', oi.quantity
+                        'name', oi.item_name,
+                        'quantity', oi.quantity,
+                        'price', oi.price,
+                        'status', oi.status
                     )
                 ) as items
             FROM orders o
             JOIN order_items oi
                 ON oi.order_id = o.order_id
-            WHERE o.bar_id = ?
+            ${whereClause}
             GROUP BY oi.order_id
-            `, [barId]);
+            `, params);
 
             const orders = rows.map(row => ({
                 ...row,
@@ -114,7 +120,8 @@ module.exports = function (fastify, opts, done) {
             const totalPrice = request.body.totalPrice || 0;
             const note = request.body.note || '';
             const barId = request.user.bar_id;
-            
+            const paymentMethod = request.body.paymentMethod || null;
+
             const updateBar = await dbGet(`
                 UPDATE bar
                 SET order_number = order_number + 1
@@ -125,18 +132,18 @@ module.exports = function (fastify, opts, done) {
             const order_number = updateBar.order_number;
             const printer_ip = updateBar.printer_ip;
 
-            const orderResult = await dbRunWithResult('INSERT INTO orders (total_price, note, bar_id, order_number) VALUES (?, ?, ?, ?)',
-                [totalPrice, note, barId, order_number]
+            const orderResult = await dbRunWithResult('INSERT INTO orders (total_price, note, bar_id, order_number, payment_method) VALUES (?, ?, ?, ?, ?)',
+                [totalPrice, note, barId, order_number, paymentMethod]
             );
             const orderId = orderResult.lastID;
 
-            const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity) VALUES (?, ?, ?)');
+            const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity, price) VALUES (?, ?, ?, ?)');
 
             // Promisify stmt.run
             const stmtRun = util.promisify(insertItem.run).bind(insertItem);
 
             for (const item of request.body.order) {
-                await stmtRun(orderId, item.name, item.quantity);
+                await stmtRun(orderId, item.name, item.quantity, Number(item.price || 0));
             }
 
             insertItem.finalize(); // Clean up statement
@@ -145,7 +152,7 @@ module.exports = function (fastify, opts, done) {
             const orderData = {
                 id: orderId,
                 order_number: order_number,
-                items: request.body.order.map (item => ({
+                items: request.body.order.map(item => ({
                     name: item.name,
                     quantity: item.quantity,
                     price: Number(item.price || 0),
@@ -155,7 +162,11 @@ module.exports = function (fastify, opts, done) {
                 totalPrice: totalPrice
             };
 
-            await fastify.printer.stampaScontrino(orderData, printer_ip);
+            try {
+                await fastify.printer.stampaScontrino(orderData, printer_ip);
+            } catch (err) {
+                console.error("Errore durante la stampa dello scontrino:", err.message);
+            }
 
             fastify.io.to(`bar-${barId}`).emit('new-order', orderData);
 
@@ -163,7 +174,8 @@ module.exports = function (fastify, opts, done) {
                 id: orderId,
                 status: "pending",
                 items: request.body.order,
-                note: note
+                note: note,
+                paymentMethod: paymentMethod
             });
 
         } catch (err) {
@@ -254,39 +266,78 @@ module.exports = function (fastify, opts, done) {
         }
     });
 
-    // POST - Chiudi giornata (svuota ordini e order_items)
+    // POST - Chiudi giornata: chiude TUTTI i bar, creando per ciascuno una transazione
+    // e un file Excel separato con i suoi ordini, poi svuota ordini e order_items.
     fastify.post("/orders/close-day", async (request, reply) => {
         try {
-            const dayTotalRow = await dbGet(
-                'SELECT COALESCE(SUM(total_price), 0) AS dayTotal FROM orders'
-            );
-            const dayTotal = Number(dayTotalRow?.dayTotal) || 0;
+            const rows = await dbAll(`
+            SELECT
+                o.order_id as id,
+                o.bar_id as barId,
+                o.total_price as totalPrice,
+                json_group_array(
+                  json_object(
+                    'name',
+                    oi.item_name,
+                    'quantity',
+                    oi.quantity,
+                    'price',
+                    oi.price
+                )
+                ) as items
+            FROM orders o
+            JOIN order_items oi ON oi.order_id = o.order_id
+            GROUP BY o.order_id
+            `);
 
-            if (dayTotal > 0) {
-                const now = new Date();
-                const dayLabel = now.toLocaleDateString('it-IT');
+            const ordersByBar = {};
 
-                await dbRun(
-                    `INSERT INTO transactions (amount, type, description)
-                     VALUES (?, 'IN', ?)`,
-                    [dayTotal, `Chiusura giornata ${dayLabel}`]
-                );
-
-                if (fastify.io) {
-                    fastify.io.emit('transaction-updated');
-                }
+            for (const row of rows) {
+                if (!ordersByBar[row.barId]) ordersByBar[row.barId] = {};
+                ordersByBar[row.barId][row.id] = {
+                    id: row.id,
+                    totalPrice: row.totalPrice,
+                    items: JSON.parse(row.items)
+                };
             }
 
-            // Prima svuoto order_items
-            await dbRun("DELETE FROM order_items");
+            const dayLabel = new Date().toLocaleDateString('it-IT');
+            const closedBars = [];
 
-            // Poi svuoto orders
+            for (const barId in ordersByBar) {
+                const barOrders = [];
+                for (const orderId in ordersByBar[barId]) {
+                    barOrders.push(ordersByBar[barId][orderId]);
+                }
+
+                const { fileName, total: barTotal, receiptData, mimeType } = fastify.excelExport.exportOrders(barOrders, `bar${barId}`);
+
+                if (barTotal > 0) {
+                    await dbRun(
+                        `INSERT INTO transactions (amount, type, description, receipt_name, receipt_mime_type, receipt_data)
+                         VALUES (?, 'IN', ?, ?, ?, ?)`,
+                        [barTotal, `Chiusura giornata Bar #${barId} ${dayLabel}`, fileName, mimeType, receiptData]
+                    );
+                }
+
+                closedBars.push({ barId: Number(barId) || null, total: barTotal, fileName, orderCount: barOrders.length });
+            }
+
+            if (closedBars.length > 0 && fastify.io) {
+                fastify.io.emit('transaction-updated');
+            }
+
+            // Svuoto ordini e order_items di TUTTI i bar
+            await dbRun("DELETE FROM order_items");
             await dbRun("DELETE FROM orders");
 
             // Resetto i contatori di riga
             await dbRun("DELETE FROM sqlite_sequence WHERE name in ('orders','order_items')");
 
-            return reply.send({ message: "Giornata chiusa con successo. Tutti gli ordini sono stati cancellati." });
+            return reply.send({
+                message: "Giornata chiusa con successo per tutti i bar.",
+                bars: closedBars
+            });
         } catch (err) {
             console.error("Errore durante la chiusura della giornata:", err.message);
             return reply.status(500).send({ message: err.message });
@@ -303,40 +354,7 @@ module.exports = function (fastify, opts, done) {
                 return reply.status(400).send({ message: "Orders data is required" });
             }
 
-            const mappedOrders = orders.map(order => ({
-                ID: order.id,
-                Totale: order.totalPrice,
-                Articoli: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
-                Data: new Date().toLocaleDateString('it-IT')
-            }));
-
-            const totalSum = orders.reduce((sum, order) => sum + order.totalPrice, 0);
-
-            // Add empty row and total
-            mappedOrders.push({});
-            mappedOrders.push({
-                ID: 'Totale giornata',
-                TotalPrice: totalSum + "€",
-                Articoli: '',
-                Data: ''
-            });
-
-            const worksheet = XLSX.utils.json_to_sheet(mappedOrders);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-
-            // Create exports directory if it doesn't exist
-            const exportsDir = process.env.EXPORT_PATH || './exports';
-            if (!fs.existsSync(exportsDir)) {
-                fs.mkdirSync(exportsDir);
-            }
-
-            // Save file on server
-            const timeStamp = getFileTimestamp();
-            const fileName = `orders_${timeStamp}.xlsx`;
-            const filePath = path.join(exportsDir, fileName);
-
-            XLSX.writeFile(workbook, filePath);
+            const { fileName, filePath } = fastify.excelExport.exportOrders(orders);
 
             return reply.send({
                 success: true,
@@ -353,18 +371,6 @@ module.exports = function (fastify, opts, done) {
             });
         }
     });
-
-    // funzione ausiliaria per calcolare il timestamp
-    function getFileTimestamp(date = new Date()) {
-        const anno = date.getFullYear();
-        const mese = String(date.getMonth() + 1).padStart(2, "0"); // mesi 0-11
-        const giorno = String(date.getDate()).padStart(2, "0");
-        const ore = String(date.getHours()).padStart(2, "0");
-        const minuti = String(date.getMinutes()).padStart(2, "0");
-
-        // Formato: YYYY-MM-DD_HH-MM
-        return `${anno}-${mese}-${giorno}_${ore}-${minuti}`;
-    }
 
     done();
 }

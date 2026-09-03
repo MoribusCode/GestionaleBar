@@ -1,9 +1,9 @@
 <template>
-  <Menubar :model="menuItems" class="fixed left-0 right-0 top-0 z-50 border-2 border-slate-200/70 bg-transparent py-4 px-8 backdrop-blur-md">
-    
+  <Menubar :model="menuItems" class="fixed left-0 right-0 top-0 z-50 border-2 border-slate-200/70 bg-transparent py-1.5 px-8 backdrop-blur-md">
+
     <template #start>
       <div class="flex items-center gap-2 mr-8 cursor-pointer" @click="$router.push('/')">
-        <img :src="logo" alt="BarH" class="h-18 w-auto" />
+        <img :src="logo" alt="BarH" class="h-12 w-auto" />
       </div>
     </template>
 
@@ -64,11 +64,8 @@ const userStore = useUserStore();
 
 const isAdmin = () => userStore.user?.role === 'admin';
 const isCashier = () => userStore.user?.role === 'cashier';
-const isFood = () => userStore.user?.role === 'Cicchetti';
-const isBeer = () => userStore.user?.role === 'Spina';
-const isBar = () => userStore.user?.role === 'Bar';
-const isDrink = () => userStore.user?.role === 'Drinks';
-const isStaff = () => ['admin', 'cashier', 'Cicchetti', 'Spina', 'Bar', 'Drinks'].includes(userStore.user?.role);
+const isPostazione = () => userStore.user?.role === 'postazione';
+const isStaff = () => ['admin', 'cashier', 'postazione'].includes(userStore.user?.role);
 const isAuthenticated = () => !!userStore.user;
 
 // Definiamo le rotte per la navigazione
@@ -78,10 +75,7 @@ const menuItems = ref([
   { label: 'Admin', route: '/admin', icon: { type: 'material', name: 'admin_panel_settings' }, visible: isAdmin },
   { label: 'Storico', route: '/history', icon: { type: 'material', name: 'history' }, visible: isStaff },
   { label: 'Cassa', route: '/orders', icon: { type: 'material', name: 'shopping_cart' }, visible: isCashier },
-  { label: 'Cicchetti', route: '/cicchetti', icon: { type: 'material', name: 'fastfood' }, visible: isFood },
-  { label: 'Birre', route: '/birre', icon: { type: 'material', name: 'local_bar' }, visible: isBeer },
-  { label: 'Bar', route: '/bar', icon: { type: 'material', name: 'coffee' }, visible: isBar },
-  { label: 'Drinks', route: '/drinks', icon: { type: 'material', name: 'local_drink' }, visible: isDrink },
+  { label: 'Postazione', route: '/postazione', icon: { type: 'material', name: 'storefront' }, visible: isPostazione },
 ]);
 
 const handleLogout = async () => {

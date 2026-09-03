@@ -14,13 +14,14 @@ const showConfirmation = ref(false);
 const lastOrderId = ref(null);
 let confirmationTimeout = null;
 
-async function storeOrder() {
+async function storeOrder(paymentMethod) {
   try {
     //send the order to the backend
     const response = await axios.post(`${API_BASE_URL}/orders`, {
       order: list.value,
       totalPrice: totalPrice(),
-      note: orderNote.value
+      note: orderNote.value,
+      paymentMethod: paymentMethod
     });
     console.log('Order stored successfully', response.data);
 
@@ -111,9 +112,18 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="flex gap-3">
-      <Button @click="clean" label="Cancella" class="h-10! flex-1! rounded-lg! border! border-red-100! bg-red-50! font-bold! text-red-400! hover:bg-red-100!" />
-      <Button @click="storeOrder" label="Conferma" class="h-10! flex-1! rounded-lg! border! border-zinc-200! bg-white! font-bold! text-zinc-900! hover:bg-zinc-100!" />
+    <div class="flex flex-col gap-3">
+      <div class="flex gap-3">
+        <Button @click="storeOrder('contanti')" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
+          <i class="pi pi-money-bill text-xl!"></i>
+          <span>Contanti</span>
+        </Button>
+        <Button @click="storeOrder('pos')" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
+          <i class="pi pi-credit-card text-xl!"></i>
+          <span>POS</span>
+        </Button>
+      </div>
+      <Button @click="clean" label="Cancella" class="h-10! w-full! rounded-lg! border! border-red-100! bg-red-50! font-bold! text-red-400! hover:bg-red-100!" />
     </div>
 
     <div v-if="showConfirmation" class="mt-2 rounded-lg border border-emerald-300 bg-emerald-100 p-2 text-center text-sm font-semibold text-emerald-800">

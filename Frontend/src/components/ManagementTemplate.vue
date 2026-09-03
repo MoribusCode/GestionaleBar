@@ -30,14 +30,13 @@ const showDeleteDialog = ref(false);
 const loading = computed(() => props.items === undefined);
 
 const lowerName = computed(() => props.entityName.toLowerCase());
-const startsWithVowel = computed(() => /^[aeiou]/i.test(props.entityName));
 
 const title = computed(() => props.title ?? `Gestione ${props.entityName}`);
 const newLabel = computed(() => `Nuovo ${props.entityName}`);
 const formIcon = computed(() => (isEditing.value ? 'pi pi-pencil' : props.createIcon));
 const formTitle = computed(() => (isEditing.value ? `Modifica ${props.entityName}` : `Nuovo ${props.entityName}`));
 const formSubtitle = computed(() => props.formSubtitle ?? (isEditing.value
-  ? `Aggiorna le informazioni ${startsWithVowel.value ? "dell'" : 'del '}${lowerName.value}`
+  ? `Aggiorna le informazioni del ${lowerName.value}`
   : `Compila i campi per aggiungere un ${lowerName.value}`));
 const submitLabel = computed(() => (isEditing.value ? 'Salva Modifiche' : `Crea ${props.entityName}`));
 const submitIcon = computed(() => (isEditing.value ? 'pi pi-check' : 'pi pi-plus'));
@@ -111,6 +110,10 @@ const deleteDialogPt = {
     <!-- Content Area -->
     <div class="px-8 py-8">
       <div class="max-w-7xl mx-auto">
+        <div v-if="$slots.toolbar" class="mb-4 flex flex-wrap items-center gap-3">
+          <slot name="toolbar" />
+        </div>
+
         <div class="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
           <DataTable :value="items ?? []" :loading="loading" tableStyle="min-width: 100%" :pt="tablePt">
             <slot name="columns" />

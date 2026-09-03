@@ -1,16 +1,18 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
 import ManagementTemplate from '@/components/ManagementTemplate.vue';
+import { useCategories } from '@/composables/useCategories';
 import { API_BASE_URL } from '@/store';
 
 const fieldClass = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-700 focus:bg-white';
 
 const managementTemplate = ref(null);
+const { categoryNames, fetchCategories } = useCategories();
 
 const users = ref(); // undefined finché non arriva la prima risposta: la tabella lo interpreta come "in caricamento"
 const bars = ref([]);
@@ -20,22 +22,37 @@ const userToDelete = ref(null);
 const availableRoles = [
   { value: 'admin', label: 'Admin' },
   { value: 'cashier', label: 'Cashier' },
-  { value: 'Cicchetti', label: 'Cicchetti' },
-  { value: 'Spina', label: 'Spina' },
-  { value: 'Bar', label: 'Bar' },
-  { value: 'Drinks', label: 'Drinks' }
+  { value: 'postazione', label: 'Postazione' }
 ];
 
 const formData = ref({
   username: '',
   password: '',
   role: null,
-  bar_id: null
+  bar_id: null,
+  categories: []
 });
 
 const resetForm = () => {
-  formData.value = { username: '', password: '', role: null, bar_id: null };
+  formData.value = { username: '', password: '', role: null, bar_id: null, categories: [] };
   selectedUser.value = null;
+};
+
+watch(() => formData.value.role, (role) => {
+  if (role === 'admin') {
+    formData.value.bar_id = null;
+  }
+});
+
+const isCategorySelected = (category) => formData.value.categories.includes(category);
+
+const toggleCategory = (category) => {
+  const index = formData.value.categories.indexOf(category);
+  if (index === -1) {
+    formData.value.categories.push(category);
+  } else {
+    formData.value.categories.splice(index, 1);
+  }
 };
 
 const fetchUsers = async () => {
@@ -77,7 +94,8 @@ const openEditDialog = (user) => {
     username: user.username,
     password: '',
     role: user.role,
-    bar_id: user.bar_id
+    bar_id: user.bar_id,
+    categories: [...(user.categories || [])]
   };
   managementTemplate.value.openEdit();
   fetchBars();
@@ -130,6 +148,7 @@ const deleteUser = async () => {
 onMounted(() => {
   fetchUsers();
   fetchBars();
+  fetchCategories();
 });
 </script>
 
@@ -223,7 +242,7 @@ onMounted(() => {
       </div>
 
       <!-- Bar associato -->
-      <div class="flex flex-col gap-1.5">
+      <div v-if="formData.role !== 'admin'" class="flex flex-col gap-1.5">
         <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600">Bar associato</label>
         <Dropdown
           v-model="formData.bar_id"
@@ -234,6 +253,25 @@ onMounted(() => {
           showClear
           :class="fieldClass"
         />
+      </div>
+
+      <!-- Categorie gestite (solo per il ruolo Postazione) -->
+      <div v-if="formData.role === 'postazione'" class="flex flex-col gap-1.5">
+        <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600">Categorie gestite</label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="category in categoryNames"
+            :key="category"
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
+            :class="isCategorySelected(category)
+              ? 'border-slate-800 bg-slate-800 text-white'
+              : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'"
+            @click="toggleCategory(category)"
+          >
+            {{ category }}
+          </button>
+        </div>
       </div>
     </template>
 

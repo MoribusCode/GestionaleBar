@@ -48,6 +48,11 @@ const router = createRouter({
           path: 'inventory-planning',
           name: 'inventory-planning',
           component: () => import('@/views/InventoryPlanningView.vue')
+        },
+        {
+          path: 'categories-management',
+          name: 'categories-management',
+          component: () => import('@/views/CategoriesManagement.vue')
         }
       ]
     },
@@ -66,7 +71,7 @@ const router = createRouter({
       component: () => import('@/views/HistoryView.vue'),
       meta: { 
         requiresAuth: true,
-        roles: ['admin', 'cashier', 'Cicchetti', 'Spina', 'Drinks', 'Bar']
+        roles: ['admin', 'cashier', 'postazione']
       }
     },
     {
@@ -78,39 +83,12 @@ const router = createRouter({
       }
     },
     {
-      path: '/cicchetti',
-      name: 'cicchetti',
-      component: () => import('@/views/Cicchetti.vue'),
+      path: '/postazione',
+      name: 'postazione',
+      component: () => import('@/views/Postazione.vue'),
       meta: {
         requiresAuth: true,
-        roles: ['Cicchetti']
-      }
-    },
-    {
-      path: '/birre',
-      name: 'birre',
-      component: () => import('@/views/Birre.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['Spina']
-      }
-    },
-    {
-      path: '/bar',
-      name: 'bar',
-      component: () => import('@/views/Bar.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['Bar']
-      }
-    },
-    {
-      path: '/drinks',
-      name: 'drinks',
-      component: () => import('@/views/Drinks.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['Drinks']
+        roles: ['postazione']
       }
     },
   ]

@@ -2,8 +2,6 @@ import { ref } from 'vue';
 
 export const addedToOrder = ref([]);
 
-export const ITEM_CATEGORIES = ['Cicchetti', 'Spina', 'Bar', 'Drinks'];
-
 export const API_BASE_URL = '/api';
 export const BASE_URL = '/';
 export const SOCKET_PATH = '/api/socket.io';

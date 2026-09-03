@@ -29,10 +29,14 @@ fastify.register(require("./plugins/jwt"));
 // Register printer plugin
 fastify.register(require("./plugins/printer"));
 
+// Register excel export plugin
+fastify.register(require("./plugins/excelExport"));
+
 // Register routes 
 fastify.register(require("./routes/admin"), {prefix: "/api"});
 fastify.register(require ("./routes/auth"), {prefix: "/api"});
 fastify.register(require ("./routes/items"), {prefix: "/api"});
+fastify.register(require ("./routes/categories"), {prefix: "/api"});
 fastify.register(require ("./routes/orders"), {prefix: "/api"});
 fastify.register(require ("./routes/transactions"), {prefix: "/api"});
 fastify.register(require ("./routes/inventory"), {prefix: "/api"});

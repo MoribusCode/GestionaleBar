@@ -16,11 +16,8 @@ let socket = null;
 
 const isAdmin = () => userStore.user?.role === 'admin';
 const isCashier = () => userStore.user?.role === 'cashier';
-const isFood = () => userStore.user?.role === 'Cicchetti';
-const isBeer = () => userStore.user?.role === 'Spina';
-const isBar = () => userStore.user?.role === 'Bar';
-const isDrink = () => userStore.user?.role === 'Drinks';
-const isStaff = () => ['admin', 'cashier', 'Cicchetti', 'Spina', 'Drinks', 'Bar'].includes(userStore.user?.role);
+const isPostazione = () => userStore.user?.role === 'postazione';
+const isStaff = () => ['admin', 'cashier', 'postazione'].includes(userStore.user?.role);
 const isAuthenticated = () => !!userStore.user;
 
 const navigationCards = [
@@ -57,36 +54,12 @@ const navigationCards = [
     route: '/bilancio'
   },
   {
-    key: 'food',
-    visible: isFood,
-    title: 'Cicchetti',
-    description: 'Gestione cicchetti',
-    icon: 'fa-solid fa-burger',
-    route: '/cicchetti'
-  },
-  {
-    key: 'beer',
-    visible: isBeer,
-    title: 'Spina',
-    description: 'Gestione spina',
-    icon: 'fa-solid fa-beer-mug-empty',
-    route: '/birre'
-  },
-  {
-    key: 'bar',
-    visible: isBar,
-    title: 'Bar',
-    description: 'Gestione bar',
-    icon: 'fa-solid fa-mug-hot',
-    route: '/bar'
-  },
-  {
-    key: 'drink',
-    visible: isDrink,
-    title: 'Drink',
-    description: 'Gestione drinks',
-    icon: 'fa-solid fa-martini-glass',
-    route: '/drinks'
+    key: 'postazione',
+    visible: isPostazione,
+    title: 'Postazione',
+    description: 'Gestione ordini',
+    icon: 'fas fa-store',
+    route: '/postazione'
   }
 ];
 

@@ -1,16 +1,25 @@
 <script setup>
 import axios from 'axios';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
+import Dropdown from 'primevue/dropdown';
 import { API_BASE_URL } from '@/store';
+import { useUserStore } from '@/stores/user';
+
+const userStore = useUserStore();
+const isAdmin = computed(() => userStore.user?.role === 'admin');
 
 let orders = ref([]);
 const shown = ref(null);
+
+const ALL_BARS = 'all'; // PrimeVue Dropdown tratta null/'' come "nessuna selezione": serve un valore non vuoto
+const bars = ref([]);
+const selectedBarId = ref(ALL_BARS);
 
 const showDeleteOrderDialog = ref(false);
 const orderToDeleteId = ref(null);
@@ -18,11 +27,29 @@ const showCloseDayDialog = ref(false);
 
 onMounted(() => {
   getOrders();
+  if (isAdmin.value) {
+    fetchBars();
+  }
 });
+
+async function fetchBars() {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/bars`, { withCredentials: true });
+    bars.value = res.data.bars || [];
+  } catch (error) {
+    console.error('Errore nel recupero dei bar:', error);
+  }
+}
+
+const barFilterOptions = computed(() => [
+  { value: ALL_BARS, label: 'Tutti i bar' },
+  ...bars.value.map((bar) => ({ value: bar.id, label: `Bar #${bar.id} - ${bar.printer_ip}` }))
+]);
 
 async function getOrders() {
   try {
-    const response = await axios.get(`${API_BASE_URL}/orders`);
+    const params = isAdmin.value && selectedBarId.value !== ALL_BARS ? { bar_id: selectedBarId.value } : {};
+    const response = await axios.get(`${API_BASE_URL}/orders`, { params });
     orders.value = response.data;
     console.log('Orders retrieved successfully', orders.value);
 
@@ -60,6 +87,10 @@ async function proceedDeleteOrder() {
     showDeleteOrderDialog.value = false;
     orderToDeleteId.value = null;
   }
+}
+
+function onBarFilterChange() {
+  getOrders();
 }
 
 function toggleOrder(id) {
@@ -118,14 +149,13 @@ async function proceedCloseDay() {
   showCloseDayDialog.value = false;
 
   try {
-    exportToExcel();
-
+    // Il server chiude TUTTI i bar: crea una transazione e un file Excel per ciascuno
     const res = await axios.post(`${API_BASE_URL}/orders/close-day`);
 
     if (res.status === 200) {
       orders.value = [];
       shown.value = null;
-      console.log("Giornata chiusa con successo!");
+      console.log("Giornata chiusa con successo!", res.data);
     }
   } catch (e) {
     console.error("Errore durante la chiusura della giornata:", e);
@@ -138,6 +168,18 @@ async function proceedCloseDay() {
   <div class="mx-auto flex w-full max-w-5xl flex-col gap-4 pb-36">
     <div class="rounded-2xl border-2 border-slate-200/70 bg-white/85 p-4 backdrop-blur-sm">
       <h1 class="text-center text-3xl font-black text-zinc-900">Storico ordini</h1>
+    </div>
+
+    <div v-if="isAdmin" class="flex items-center justify-end gap-2">
+      <label class="text-sm font-semibold text-slate-600">Bar</label>
+      <Dropdown
+        v-model="selectedBarId"
+        :options="barFilterOptions"
+        optionLabel="label"
+        optionValue="value"
+        class="w-64 rounded-xl border border-slate-200 bg-white text-sm"
+        @change="onBarFilterChange"
+      />
     </div>
 
     <div class="flex flex-col items-center gap-3">
@@ -169,7 +211,15 @@ async function proceedCloseDay() {
                 :key="index"
                 class="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2"
               >
-                <span class="text-sm font-medium text-zinc-800">{{ item.name }}</span>
+                <span class="flex items-center gap-2 text-sm font-medium text-zinc-800">
+                  <i
+                    v-if="item.status === 'completato'"
+                    class="pi pi-check-circle text-green-600"
+                    v-tooltip="'Completato'"
+                  ></i>
+                  <span v-else class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400" v-tooltip="'In attesa'"></span>
+                  {{ item.name }}
+                </span>
                 <span class="text-sm font-semibold text-zinc-700">x{{ item.quantity }}</span>
               </li>
             </ul>
@@ -256,7 +306,7 @@ async function proceedCloseDay() {
         <div class="p-2">
             <div class="mb-4 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3">
                 <i class="pi pi-exclamation-triangle text-lg text-red-600"></i>
-                <p class="text-sm font-medium text-red-700">Questa operazione esporta e <span class="font-bold underline">cancella tutti gli ordini</span> di oggi.</p>
+                <p class="text-sm font-medium text-red-700">Questa operazione esporta e <span class="font-bold underline">cancella tutti gli ordini di tutti i bar</span> di oggi.</p>
             </div>
             <p class="text-sm text-slate-700">
                 Vuoi procedere con la chiusura della giornata?

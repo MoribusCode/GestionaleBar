@@ -13,7 +13,7 @@ module.exports = function (fastify, opts, done) {
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
 
             try {
-                const { username, password, role, bar_id } = request.body;
+                const { username, password, role, bar_id, categories } = request.body;
 
                 if (role === 'admin' && bar_id) {
                     return reply.code(400).send({ error: 'Un admin non può essere associato a un bar' });
@@ -22,9 +22,10 @@ module.exports = function (fastify, opts, done) {
                 // Hash the admin password
                 const saltRounds = 10;
                 const hashedPassword = await bcrypt.hash(password, saltRounds);
+                const db_categories = JSON.stringify(categories || []); //Se non definito, salvo un array vuoto
 
-                const user = await dbRun('INSERT INTO users (username, password, role,bar_id) VALUES (?, ?, ?,?)',
-                    [username, hashedPassword, role, bar_id]
+                const user = await dbRun('INSERT INTO users (username, password, role, bar_id, categories) VALUES (?, ?, ?, ?, ?)',
+                    [username, hashedPassword, role, bar_id, db_categories]
                 );
 
                 reply.code(201).send("utente creato con successo");
@@ -39,8 +40,12 @@ module.exports = function (fastify, opts, done) {
     fastify.get('/users',
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
             try {
-                const users = await dbAll('SELECT id, username, role, bar_id FROM users');
-                return { users };
+                const users = await dbAll('SELECT id, username, role, bar_id, categories FROM users');
+                const parsedUsers = users.map(user => ({
+                    ...user,
+                    categories: JSON.parse(user.categories || '[]')
+                }));
+                return { users: parsedUsers };
 
             } catch (err) {
                 reply.code(500).send({ error: 'Internal Server Error' });
@@ -73,14 +78,14 @@ module.exports = function (fastify, opts, done) {
 
             try {
                 const { id } = request.params;
-                const { username, password, role, bar_id } = request.body;
+                const { username, password, role, bar_id, categories } = request.body;
 
                 if (role === 'admin' && bar_id) {
                     return reply.code(400).send({ error: 'Un admin non può essere associato a un bar' });
                 }
 
-                const fields = ['username = ?', 'role = ?', 'bar_id = ?'];
-                const values = [username, role, bar_id];
+                const fields = ['username = ?', 'role = ?', 'bar_id = ?', 'categories = ?'];
+                const values = [username, role, bar_id, JSON.stringify(categories || [])];
 
                 if (password) {
                     const saltRounds = 10;
