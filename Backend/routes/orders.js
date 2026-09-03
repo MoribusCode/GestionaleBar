@@ -159,7 +159,8 @@ module.exports = function (fastify, opts, done) {
                     category: item.category
                 })),
                 note: note,
-                totalPrice: totalPrice
+                totalPrice: totalPrice,
+                paymentMethod: paymentMethod
             };
 
             try {
