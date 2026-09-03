@@ -12,9 +12,11 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@iconify/vue": "^5.0.1",
     "@primeuix/themes": "^2.0.3",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.11.0",
+    "chart.js": "^4.5.1",
     "file-saver": "^2.0.5",
     "pinia": "^3.0.3",
     "primeicons": "^7.0.0",

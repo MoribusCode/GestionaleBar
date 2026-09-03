@@ -18,12 +18,43 @@ const router = createRouter({
     },
     {
       path: '/admin',
-      name: 'admin',
-      component: () => import('@/views/AdminDashboard.vue'),
-      meta: { 
+      component: () => import('@/views/AdminLayout.vue'),
+      meta: {
         requiresAuth: true,
-        roles: ['admin']  
-      }
+        roles: ['admin']
+      },
+      children: [
+        {
+          path: '',
+          name: 'admin',
+          component: () => import('@/views/AdminDashboard.vue')
+        },
+        {
+          path: 'items-management',
+          name: 'items-management',
+          component: () => import('@/views/ItemsManagement.vue')
+        },
+        {
+          path: 'users-management',
+          name: 'users-management',
+          component: () => import('@/views/UsersManagement.vue')
+        },
+        {
+          path: 'bars-management',
+          name: 'bars-management',
+          component: () => import('@/views/BarsManagement.vue')
+        },
+        {
+          path: 'inventory-planning',
+          name: 'inventory-planning',
+          component: () => import('@/views/InventoryPlanningView.vue')
+        },
+        {
+          path: 'categories-management',
+          name: 'categories-management',
+          component: () => import('@/views/CategoriesManagement.vue')
+        }
+      ]
     },
     {
       path: '/orders',
@@ -40,7 +71,7 @@ const router = createRouter({
       component: () => import('@/views/HistoryView.vue'),
       meta: { 
         requiresAuth: true,
-        roles: ['admin', 'cashier', 'Cicchetti', 'Spina', 'Drinks', 'Bar']
+        roles: ['admin', 'cashier', 'postazione']
       }
     },
     {
@@ -52,59 +83,14 @@ const router = createRouter({
       }
     },
     {
-      path: '/cicchetti',
-      name: 'cicchetti',
-      component: () => import('@/views/Cicchetti.vue'),
+      path: '/postazione',
+      name: 'postazione',
+      component: () => import('@/views/Postazione.vue'),
       meta: {
         requiresAuth: true,
-        roles: ['Cicchetti']
+        roles: ['postazione']
       }
     },
-    {
-      path: '/birre',
-      name: 'birre',
-      component: () => import('@/views/Birre.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['Spina']
-      }
-    },
-    {
-      path: '/bar',
-      name: 'bar',
-      component: () => import('@/views/Bar.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['Bar']
-      }
-    },
-    {
-      path: '/drinks',
-      name: 'drinks',
-      component: () => import('@/views/Drinks.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['Drinks']
-      }
-    },
-    {
-      path: '/items-management',
-      name: 'items-management',
-      component: () => import('@/views/ItemsManagement.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['admin']
-      }
-    },
-    {
-      path: '/inventory-planning',
-      name: 'inventory-planning',
-      component: () => import('@/views/InventoryPlanningView.vue'),
-      meta: {
-        requiresAuth: true,
-        roles: ['admin']
-      }
-    }
   ]
 })
 

@@ -54,15 +54,23 @@ module.exports = function (fastify, opts, done) {
         try {
             const user = await getUser(username);
 
+            if(!user) {
+                return reply.status(401).send({ message: "Invalid credentials" });
+            }
+
             const match = await bcrypt.compare(password, user.password);
 
             if (!user || !match) {
                 return reply.status(401).send({ message: "Invalid credentials" });
             }
 
+            const categories = JSON.parse(user.categories || '[]');
+
             const token = await fastify.jwt.sign({
                 username: user.username,
-                role: user.role
+                role: user.role,
+                bar_id: user.bar_id,
+                categories
             });
 
             reply.setCookie('token', token, {
@@ -76,7 +84,8 @@ module.exports = function (fastify, opts, done) {
                 message: "Login successful",
                 user: {
                     username: user.username,
-                    role: user.role
+                    role: user.role,
+                    categories
                 }
             });
 

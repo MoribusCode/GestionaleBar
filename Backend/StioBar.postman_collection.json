@@ -1,0 +1,404 @@
+{
+  "info": {
+    "name": "StioBar API",
+    "_postman_id": "b1e2a2c0-1e6a-4b1a-9a1a-stiobarapi001",
+    "description": "Collection per le API del backend GestionaleBar (StioBar).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000/api", "type": "string" },
+    { "key": "user_id", "value": "1", "type": "string" },
+    { "key": "bar_id", "value": "1", "type": "string" },
+    { "key": "item_id", "value": "1", "type": "string" },
+    { "key": "order_id", "value": "1", "type": "string" },
+    { "key": "transaction_id", "value": "1", "type": "string" },
+    { "key": "category", "value": "cucina", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+            "description": "Setta il cookie httpOnly 'token' (JWT) usato dalle altre richieste. Postman lo salva automaticamente nel cookie jar."
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"nuovoUtente\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/register", "host": ["{{base_url}}"], "path": ["register"] }
+          }
+        },
+        {
+          "name": "Check sessione",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/check", "host": ["{{base_url}}"], "path": ["check"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/logout", "host": ["{{base_url}}"], "path": ["logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Crea utente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"barista1\",\n  \"password\": \"password123\",\n  \"role\": \"user\",\n  \"bar_id\": {{bar_id}}\n}"
+            },
+            "url": { "raw": "{{base_url}}/create-user", "host": ["{{base_url}}"], "path": ["create-user"] },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Lista utenti",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Elimina utente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/delete-user/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["delete-user", "{{user_id}}"]
+            },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Lista bar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/bars", "host": ["{{base_url}}"], "path": ["bars"] },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Crea bar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"printer_ip\": \"192.168.1.50\",\n  \"categories\": [\"cucina\", \"bar\"]\n}"
+            },
+            "url": { "raw": "{{base_url}}/create-bar", "host": ["{{base_url}}"], "path": ["create-bar"] },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Aggiorna bar",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"printer_ip\": \"192.168.1.51\",\n  \"categories\": [\"cucina\", \"bar\", \"gelati\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/update-bar/{{bar_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["update-bar", "{{bar_id}}"]
+            },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Elimina bar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/delete-bar/{{bar_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["delete-bar", "{{bar_id}}"]
+            },
+            "description": "Richiede ruolo admin. Fallisce se ci sono utenti associati al bar."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Items",
+      "item": [
+        {
+          "name": "Get items (admin=tutti, user=per categoria bar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/get-items", "host": ["{{base_url}}"], "path": ["get-items"] },
+            "description": "Richiede utente autenticato."
+          }
+        },
+        {
+          "name": "Get items catalogo (in vendita)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/get-items-catalog", "host": ["{{base_url}}"], "path": ["get-items-catalog"] }
+          }
+        },
+        {
+          "name": "Aggiungi item",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Birra media\",\n  \"price\": 5.00,\n  \"category\": \"bar\",\n  \"note\": \"\",\n  \"min_stock\": 10,\n  \"practical_unit\": \"bottiglie\",\n  \"flag_sale\": 1,\n  \"flag_purchase\": 1\n}"
+            },
+            "url": { "raw": "{{base_url}}/add-item", "host": ["{{base_url}}"], "path": ["add-item"] },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Aggiorna item",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 5.50,\n  \"note\": \"aggiornato\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/update-item/{{item_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["update-item", "{{item_id}}"]
+            },
+            "description": "Richiede ruolo admin. Body con qualsiasi sottoinsieme dei campi: name, price, category, note, min_stock, practical_unit, flag_sale, flag_purchase."
+          }
+        },
+        {
+          "name": "Elimina item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/delete-item/{{item_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["delete-item", "{{item_id}}"]
+            },
+            "description": "Richiede ruolo admin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Lista ordini (per bar dell'utente)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/orders", "host": ["{{base_url}}"], "path": ["orders"] }
+          }
+        },
+        {
+          "name": "Lista ordini in attesa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/orders/pending", "host": ["{{base_url}}"], "path": ["orders", "pending"] }
+          }
+        },
+        {
+          "name": "Crea ordine",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order\": [\n    { \"name\": \"Birra media\", \"quantity\": 2 },\n    { \"name\": \"Panino\", \"quantity\": 1 }\n  ],\n  \"totalPrice\": 15.00,\n  \"note\": \"senza cipolla\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/orders", "host": ["{{base_url}}"], "path": ["orders"] }
+          }
+        },
+        {
+          "name": "Elimina ordine",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/delete-order/{{order_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["delete-order", "{{order_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Chiudi categoria ordine",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/category/{{category}}/close",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{order_id}}", "category", "{{category}}", "close"]
+            }
+          }
+        },
+        {
+          "name": "Chiudi giornata",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/orders/close-day", "host": ["{{base_url}}"], "path": ["orders", "close-day"] },
+            "description": "Registra il totale giornata come transazione IN, poi svuota orders e order_items."
+          }
+        },
+        {
+          "name": "Esporta Excel",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orders\": [\n    {\n      \"id\": 1,\n      \"totalPrice\": 15.00,\n      \"items\": [\n        { \"name\": \"Birra media\", \"quantity\": 2 },\n        { \"name\": \"Panino\", \"quantity\": 1 }\n      ]\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/export-excel", "host": ["{{base_url}}"], "path": ["export-excel"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Lista transazioni",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/get-transactions", "host": ["{{base_url}}"], "path": ["get-transactions"] },
+            "description": "Richiede utente autenticato."
+          }
+        },
+        {
+          "name": "Aggiungi transazione",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 25.50,\n  \"type\": \"OUT\",\n  \"description\": \"Acquisto ghiaccio\",\n  \"receiptName\": null,\n  \"receiptMimeType\": null,\n  \"receiptData\": null\n}"
+            },
+            "url": { "raw": "{{base_url}}/add-transaction", "host": ["{{base_url}}"], "path": ["add-transaction"] },
+            "description": "Richiede utente autenticato. type deve essere 'IN' o 'OUT'."
+          }
+        },
+        {
+          "name": "Aggiorna transazione",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 30.00,\n  \"type\": \"OUT\",\n  \"description\": \"Acquisto ghiaccio (corretto)\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/update-transaction/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["update-transaction", "{{transaction_id}}"]
+            },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Elimina transazione",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/delete-transaction/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["delete-transaction", "{{transaction_id}}"]
+            },
+            "description": "Richiede ruolo admin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Panoramica inventario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/inventory-overview", "host": ["{{base_url}}"], "path": ["inventory-overview"] },
+            "description": "Richiede ruolo admin."
+          }
+        },
+        {
+          "name": "Items da acquistare",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/purchase-items", "host": ["{{base_url}}"], "path": ["purchase-items"] }
+          }
+        },
+        {
+          "name": "Items in vendita",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/sale-items", "host": ["{{base_url}}"], "path": ["sale-items"] }
+          }
+        },
+        {
+          "name": "Aggiorna quantita inventario",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 24\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/update-inventory/{{item_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["update-inventory", "{{item_id}}"]
+            },
+            "description": "Richiede ruolo admin."
+          }
+        }
+      ]
+    }
+  ]
+}
