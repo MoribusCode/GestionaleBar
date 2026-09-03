@@ -4,6 +4,7 @@ import axios from 'axios';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
+import ToggleSwitch from 'primevue/toggleswitch';
 import ManagementTemplate from '@/components/ManagementTemplate.vue';
 import { useCategories } from '@/composables/useCategories';
 import { API_BASE_URL } from '@/store';
@@ -17,11 +18,12 @@ const barToDelete = ref(null);
 
 const formData = ref({
   printer_ip: '',
-  categories: []
+  categories: [],
+  pos_enabled: false
 });
 
 const resetForm = () => {
-  formData.value = { printer_ip: '', categories: [] };
+  formData.value = { printer_ip: '', categories: [], pos_enabled: false };
   selectedBar.value = null;
 };
 
@@ -43,7 +45,8 @@ const openEditDialog = (bar) => {
   selectedBar.value = bar;
   formData.value = {
     printer_ip: bar.printer_ip,
-    categories: [...(bar.categories || [])]
+    categories: [...(bar.categories || [])],
+    pos_enabled: !!bar.pos_enabled
   };
   managementTemplate.value.openEdit();
 };
@@ -139,6 +142,16 @@ onMounted(() => {
           </div>
         </template>
       </Column>
+      <Column header="POS" style="width: 10%">
+        <template #body="{ data }">
+          <span
+            class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold"
+            :class="data.pos_enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'"
+          >
+            {{ data.pos_enabled ? 'Abilitato' : 'Disabilitato' }}
+          </span>
+        </template>
+      </Column>
       <Column header="Azioni" style="width: 15%">
         <template #body="{ data }">
           <div class="flex gap-2">
@@ -192,6 +205,12 @@ onMounted(() => {
           </button>
         </div>
       </div>
+
+      <!-- Abilita POS -->
+      <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Abilita POS</label>
+        <ToggleSwitch v-model="formData.pos_enabled" />
+      </div>
     </template>
 
     <template #delete-message>
@@ -206,3 +225,24 @@ onMounted(() => {
     </template>
   </ManagementTemplate>
 </template>
+
+<style scoped>
+:deep(.p-toggleswitch .p-toggleswitch-slider) {
+  background: #cbd5e1; /* slate-300, spento ma visibile invece del grigio quasi invisibile di default */
+}
+
+:deep(.p-toggleswitch[data-p-checked="true"] .p-toggleswitch-slider) {
+  background: #1e293b; /* slate-800, coerente con gli altri stati "attivi" dell'app */
+}
+
+:deep(.p-toggleswitch:not(.p-disabled):has(.p-toggleswitch-input:focus-visible) .p-toggleswitch-slider) {
+  box-shadow: 0 0 0 2px #1e293b33;
+}
+
+/* il tema di default posiziona l'handle con un top fisso che qui trabocca dal fondo del
+   track (top:12px su un track di 24px, con handle di 16px): lo centro esplicitamente */
+:deep(.p-toggleswitch-handle) {
+  top: 50%;
+  transform: translateY(-50%);
+}
+</style>

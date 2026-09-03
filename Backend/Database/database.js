@@ -185,6 +185,19 @@ db.serialize(() => {
     });
   });
 
+  // Migrazione leggera: aggiunge pos_enabled se mancante (bar creati prima dell'integrazione SumUp).
+  db.all('PRAGMA table_info(bar)', (err, columns) => {
+    if (err) {
+      console.error('Errore lettura schema bar:', err.message);
+      return;
+    }
+
+    const existingColumns = new Set((columns || []).map((column) => column.name));
+    if (!existingColumns.has('pos_enabled')) {
+      db.run("ALTER TABLE bar ADD COLUMN pos_enabled INTEGER NOT NULL DEFAULT 0");
+    }
+  });
+
   // Migrazione leggera: aggiunge bar_id/order_number se mancanti (ordini creati prima dei bar multipli).
   db.all('PRAGMA table_info(orders)', (err, columns) => {
     if (err) {

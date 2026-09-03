@@ -3,7 +3,7 @@
 
 <template>
     <!-- ░░ PAGE BACKGROUND ░░ -->
-    <div class="relative isolate h-[calc(100vh-7rem)] overflow-hidden px-4 py-8 sm:px-6 lg:px-10">
+    <div class="relative isolate min-h-[calc(100vh-7rem)] px-4 py-8 sm:px-6 lg:px-10">
 
         <div class="mx-auto flex h-full w-full max-w-6xl flex-col gap-8">
 

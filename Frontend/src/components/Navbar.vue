@@ -1,9 +1,9 @@
 <template>
-  <Menubar :model="menuItems" class="fixed left-0 right-0 top-0 z-50 border-2 border-slate-200/70 bg-transparent py-1.5 px-8 backdrop-blur-md">
+  <Menubar :model="menuItems" class="fixed left-0 right-0 top-0 z-50 border-2 border-slate-200/70 bg-transparent py-1.5 lg:py-3 px-8 backdrop-blur-md">
 
     <template #start>
       <div class="flex items-center gap-2 mr-8 cursor-pointer" @click="$router.push('/')">
-        <img :src="logo" alt="BarH" class="h-12 w-auto" />
+        <img :src="logo" alt="BarH" class="h-12 lg:h-14 w-auto" />
       </div>
     </template>
 

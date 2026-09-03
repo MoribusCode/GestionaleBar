@@ -20,7 +20,7 @@ const showMenubar = computed(() => route.name !== 'login');
   <div class="h-screen bg-slate-100 font-sans text-slate-900">
     <Navbar v-if="showMenubar" />
 
-    <main class="h-full overflow-y-auto overflow-x-hidden px-3 pb-4 pt-[76px] lg:px-5 lg:pb-5">
+    <main class="h-full overflow-y-auto overflow-x-hidden px-3 pb-4 pt-[76px] lg:px-5 lg:pb-5 lg:pt-24">
       <router-view />
     </main>
   </div>
