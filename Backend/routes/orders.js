@@ -137,16 +137,30 @@ module.exports = function (fastify, opts, done) {
             );
             const orderId = orderResult.lastID;
 
-            const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity, price) VALUES (?, ?, ?, ?)');
+            const autoCompleteCategories = new Set(
+                (await dbAll('SELECT name FROM categories WHERE auto_complete = 1'))
+                    .map(c => c.name.toLowerCase())
+            );
+
+            const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity, price, status) VALUES (?, ?, ?, ?, ?)');
 
             // Promisify stmt.run
             const stmtRun = util.promisify(insertItem.run).bind(insertItem);
 
+            let completedCount = 0;
             for (const item of request.body.order) {
-                await stmtRun(orderId, item.name, item.quantity, Number(item.price || 0));
+                const isAutoComplete = autoCompleteCategories.has(String(item.category || '').toLowerCase());
+                if (isAutoComplete) completedCount++;
+                await stmtRun(orderId, item.name, item.quantity, Number(item.price || 0), isAutoComplete ? 'completato' : 'in attesa');
             }
 
             insertItem.finalize(); // Clean up statement
+
+            // se tutti gli item erano auto-complete l'ordine è già completo, se solo alcuni è parziale
+            if (completedCount > 0) {
+                const orderStatus = completedCount === request.body.order.length ? 'completato' : 'parziale';
+                await dbRun('UPDATE orders SET status = ? WHERE order_id = ?', [orderStatus, orderId]);
+            }
 
             // creo oggetto con i dati dell'ordine e i campi degli item che vengono inviati, mappati per lo scontrino
             const orderData = {
@@ -190,11 +204,8 @@ module.exports = function (fastify, opts, done) {
         const { id } = request.params;
 
         try {
-            // Prima elimino le righe associate in order_items
-            await dbRun("DELETE FROM order_items WHERE order_id = ?", [id]);
-
-            // Poi elimino l'ordine stesso
-            const result = await dbRun("DELETE FROM orders WHERE order_id = ?", [id]);
+            // order_items ha ON DELETE CASCADE su order_id: eliminare l'ordine basta
+            await dbRun("DELETE FROM orders WHERE order_id = ?", [id]);
 
             return reply.send({ message: "Ordine eliminato con successo", id });
         } catch (err) {
@@ -271,45 +282,41 @@ module.exports = function (fastify, opts, done) {
     // e un file Excel separato con i suoi ordini, poi svuota ordini e order_items.
     fastify.post("/orders/close-day", async (request, reply) => {
         try {
-            const rows = await dbAll(`
-            SELECT
-                o.order_id as id,
-                o.bar_id as barId,
-                o.total_price as totalPrice,
-                json_group_array(
-                  json_object(
-                    'name',
-                    oi.item_name,
-                    'quantity',
-                    oi.quantity,
-                    'price',
-                    oi.price
-                )
-                ) as items
-            FROM orders o
-            JOIN order_items oi ON oi.order_id = o.order_id
-            GROUP BY o.order_id
-            `);
+            const isAdmin = request.user.role === 'admin';
 
-            const ordersByBar = {};
+            // admin: un giro per ogni bar esistente; chiunque altro: un solo giro, il proprio bar
+            let barIds = [request.user.bar_id];
 
-            for (const row of rows) {
-                if (!ordersByBar[row.barId]) ordersByBar[row.barId] = {};
-                ordersByBar[row.barId][row.id] = {
-                    id: row.id,
-                    totalPrice: row.totalPrice,
-                    items: JSON.parse(row.items)
-                };
+            if (isAdmin) {
+                const bars = await dbAll('SELECT id FROM bar');
+                barIds = bars.map(bar => bar.id);
             }
 
             const dayLabel = new Date().toLocaleDateString('it-IT');
             const closedBars = [];
 
-            for (const barId in ordersByBar) {
-                const barOrders = [];
-                for (const orderId in ordersByBar[barId]) {
-                    barOrders.push(ordersByBar[barId][orderId]);
-                }
+            for (const barId of barIds) {
+            
+                const rows = await dbAll(`
+                SELECT
+                    o.order_id as id,
+                    o.total_price as totalPrice,
+                    json_group_array(
+                        json_object('name', oi.item_name, 'quantity', oi.quantity, 'price', oi.price)
+                    ) as items
+                FROM orders o
+                JOIN order_items oi ON oi.order_id = o.order_id
+                WHERE o.bar_id = ?
+                GROUP BY o.order_id
+                `, [barId]);
+
+                if (rows.length === 0) continue; // niente da chiudere per questo bar
+
+                const barOrders = rows.map(row => ({
+                    id: row.id,
+                    totalPrice: row.totalPrice,
+                    items: JSON.parse(row.items)
+                }));
 
                 const { fileName, total: barTotal, receiptData, mimeType } = fastify.excelExport.exportOrders(barOrders, `bar${barId}`);
 
@@ -321,22 +328,18 @@ module.exports = function (fastify, opts, done) {
                     );
                 }
 
-                closedBars.push({ barId: Number(barId) || null, total: barTotal, fileName, orderCount: barOrders.length });
+                await dbRun('DELETE FROM orders WHERE bar_id = ?', [barId]);
+
+                closedBars.push({ barId, total: barTotal, fileName, orderCount: barOrders.length });
             }
 
             if (closedBars.length > 0 && fastify.io) {
                 fastify.io.emit('transaction-updated');
             }
 
-            // Svuoto ordini e order_items di TUTTI i bar
-            await dbRun("DELETE FROM order_items");
-            await dbRun("DELETE FROM orders");
-
-            // Resetto i contatori di riga
-            await dbRun("DELETE FROM sqlite_sequence WHERE name in ('orders','order_items')");
 
             return reply.send({
-                message: "Giornata chiusa con successo per tutti i bar.",
+                message: isAdmin ? "Giornata chiusa con successo per tutti i bar." : "Giornata chiusa con successo per il tuo bar.",
                 bars: closedBars
             });
         } catch (err) {
@@ -355,7 +358,10 @@ module.exports = function (fastify, opts, done) {
                 return reply.status(400).send({ message: "Orders data is required" });
             }
 
-            const { fileName, filePath } = fastify.excelExport.exportOrders(orders);
+            const isAdmin = request.user.role === 'admin';
+            const ownOrders = isAdmin ? orders : orders.filter(order => order.barId === request.user.bar_id);
+
+            const { fileName, filePath } = fastify.excelExport.exportOrders(ownOrders);
 
             return reply.send({
                 success: true,

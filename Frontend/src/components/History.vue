@@ -149,7 +149,8 @@ async function proceedCloseDay() {
   showCloseDayDialog.value = false;
 
   try {
-    // Il server chiude TUTTI i bar: crea una transazione e un file Excel per ciascuno
+    // Il server chiude tutti i bar se admin, solo il proprio altrimenti; crea una
+    // transazione e un file Excel per ciascun bar coinvolto
     const res = await axios.post(`${API_BASE_URL}/orders/close-day`);
 
     if (res.status === 200) {
@@ -306,7 +307,11 @@ async function proceedCloseDay() {
         <div class="p-2">
             <div class="mb-4 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3">
                 <i class="pi pi-exclamation-triangle text-lg text-red-600"></i>
-                <p class="text-sm font-medium text-red-700">Questa operazione esporta e <span class="font-bold underline">cancella tutti gli ordini di tutti i bar</span> di oggi.</p>
+                <p class="text-sm font-medium text-red-700">
+                  Questa operazione esporta e
+                  <span class="font-bold underline">cancella tutti gli ordini {{ isAdmin ? 'di tutti i bar' : 'del tuo bar' }}</span>
+                  di oggi.
+                </p>
             </div>
             <p class="text-sm text-slate-700">
                 Vuoi procedere con la chiusura della giornata?

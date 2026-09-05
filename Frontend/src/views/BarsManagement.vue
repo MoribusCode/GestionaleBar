@@ -225,24 +225,3 @@ onMounted(() => {
     </template>
   </ManagementTemplate>
 </template>
-
-<style scoped>
-:deep(.p-toggleswitch .p-toggleswitch-slider) {
-  background: #cbd5e1; /* slate-300, spento ma visibile invece del grigio quasi invisibile di default */
-}
-
-:deep(.p-toggleswitch[data-p-checked="true"] .p-toggleswitch-slider) {
-  background: #1e293b; /* slate-800, coerente con gli altri stati "attivi" dell'app */
-}
-
-:deep(.p-toggleswitch:not(.p-disabled):has(.p-toggleswitch-input:focus-visible) .p-toggleswitch-slider) {
-  box-shadow: 0 0 0 2px #1e293b33;
-}
-
-/* il tema di default posiziona l'handle con un top fisso che qui trabocca dal fondo del
-   track (top:12px su un track di 24px, con handle di 16px): lo centro esplicitamente */
-:deep(.p-toggleswitch-handle) {
-  top: 50%;
-  transform: translateY(-50%);
-}
-</style>
