@@ -183,7 +183,19 @@ module.exports = function (fastify, opts, done) {
                 console.error("Errore durante la stampa dello scontrino:", err.message);
             }
 
-            fastify.io.to(`bar-${barId}`).emit('new-order', orderData);
+
+            const pendingItems = orderData.items.filter(item =>
+                !autoCompleteCategories.has(String(item.category || '').toLowerCase())
+            );
+
+
+
+            if (pendingItems.length > 0) {
+                const result = Object.assign({}, orderData, {
+                    items: pendingItems
+                });
+                fastify.io.to(`bar-${barId}`).emit('new-order', result);
+            }
 
             return reply.status(201).send({
                 id: orderId,
@@ -296,7 +308,7 @@ module.exports = function (fastify, opts, done) {
             const closedBars = [];
 
             for (const barId of barIds) {
-            
+
                 const rows = await dbAll(`
                 SELECT
                     o.order_id as id,

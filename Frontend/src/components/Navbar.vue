@@ -8,24 +8,24 @@
     </template>
 
     <template #item="{ item }">
-      <router-link 
-        v-if="item.route && (!item.visible || item.visible())" 
-        :to="item.route" 
-        custom 
+      <router-link
+        v-if="item.route && (!item.visible || item.visible())"
+        :to="item.route"
+        custom
         v-slot="{ href, navigate, isActive }"
       >
-        <a 
-          :href="href" 
+        <a
+          :href="href"
           @click="navigate"
           :class="[
             'inline-flex items-center gap-2 justify-center px-4 py-2 mx-1 rounded-lg transition-all duration-200 font-medium leading-none',
-            isActive 
-              ? 'bg-slate-800 text-white' 
+            isActive
+              ? 'bg-slate-800 text-white'
               : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
             ]"
             >
-          <i 
-            v-if="item.icon?.type === 'material'" 
+          <i
+            v-if="item.icon?.type === 'material'"
             class="material-icons leading-none text-base"
           >
             {{ item.icon.name }}
@@ -34,17 +34,44 @@
           <span class="leading-none">{{ item.label }}</span>
         </a>
       </router-link>
+
+      <!-- solo su mobile: utente e logout entrano nel menu a tendina, così sulla topbar non fanno sparire il logo -->
+      <span
+        v-else-if="item.isUser && (!item.visible || item.visible())"
+        class="lg:hidden inline-flex items-center gap-1.5 px-4 py-2 mx-1 font-medium leading-none text-slate-500"
+      >
+        <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200">
+          <i class="material-icons text-sm! leading-none! text-slate-600">person</i>
+        </span>
+        {{ userStore.user?.username }}
+      </span>
+
+      <a
+        v-else-if="item.isLogout && (!item.visible || item.visible())"
+        href="#"
+        @click.prevent="handleLogout"
+        class="lg:hidden inline-flex items-center gap-2 justify-center px-4 py-2 mx-1 rounded-lg font-medium leading-none text-red-600 hover:bg-red-100"
+      >
+        <i class="pi pi-sign-out leading-none"></i>
+        <span class="leading-none">{{ item.label }}</span>
+      </a>
     </template>
 
     <template #end>
-      <div class="ml-auto flex items-center">
-        <Button 
-          label="Logout" 
+      <div class="hidden lg:flex ml-auto items-center gap-2">
+        <span v-if="userStore.user" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500">
+          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200">
+            <i class="material-icons text-sm! leading-none! text-slate-600">person</i>
+          </span>
+          {{ userStore.user.username }}
+        </span>
+        <Button
+          label="Logout"
           icon="pi pi-sign-out"
-          severity="danger" 
-          text 
+          severity="danger"
+          text
           class="logout-btn inline-flex items-center justify-center rounded-lg mx-1 font-semibold hover:bg-red-200 px-4 py-2 leading-none"
-          @click="handleLogout" 
+          @click="handleLogout"
           />
       </div>
     </template>
@@ -76,6 +103,8 @@ const menuItems = ref([
   { label: 'Storico', route: '/history', icon: { type: 'material', name: 'history' }, visible: isStaff },
   { label: 'Cassa', route: '/orders', icon: { type: 'material', name: 'shopping_cart' }, visible: isCashier },
   { label: 'Postazione', route: '/postazione', icon: { type: 'material', name: 'storefront' }, visible: isPostazione },
+  { isUser: true, visible: isAuthenticated },
+  { label: 'Logout', isLogout: true, visible: isAuthenticated },
 ]);
 
 const handleLogout = async () => {
@@ -91,6 +120,13 @@ const handleLogout = async () => {
 
 :deep(.p-menubar-root-list) {
   gap: 0.25rem;
+}
+
+@media (min-width: 1024px) {
+  :deep(.p-menubar-root-list) {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 :deep(.p-menubar-item),

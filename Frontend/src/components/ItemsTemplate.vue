@@ -124,7 +124,7 @@ function metricsFor() {
 
 <template>
   <div class="flex flex-col gap-3">
-    <div class="flex gap-2 overflow-x-auto pb-1">
+    <div class="sticky top-0 z-10 flex gap-2 overflow-x-auto bg-zinc-100 pb-1 pt-1">
       <button
         v-for="category in tabCategories"
         :key="category"
