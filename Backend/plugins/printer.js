@@ -6,7 +6,7 @@ const PrinterTypes = require("node-thermal-printer").types;
 module.exports = fp(async (fastify, opts) => {
 
     const stampaScontrino = async (orderData, ip) => {
-    const printableWidth = 42;
+    const printableWidth = 42;   
 
         const normalizedIp = ip
             ? (ip.startsWith("tcp://") ? ip : `tcp://${ip}:9100`)
@@ -26,13 +26,17 @@ module.exports = fp(async (fastify, opts) => {
             throw new Error("Stampante non connessa");
         }
 
+        // Azzera eventuali righe residue prima di iniziare il nuovo scontrino.
+        await printer.raw(Buffer.from([0x1b, 0x40]));
+
         // Margine sinistro di 16 punti di stampa.
         await setLeftMargin(printer);
 
         // Il logo deve essere aggiunto prima di tutto il testo e del taglio.
-        const logoPath = path.join(__dirname, "../../Frontend/src/assets/images/logo.png");
+        const logoPath = path.join(__dirname, "../../Frontend/src/assets/images/logoPrinter.png");
         printer.alignCenter();
         await printer.printImage(logoPath);
+        printer.newLine();
         printer.newLine();
 
         printer.println("DOCUMENTO NON FISCALE");
