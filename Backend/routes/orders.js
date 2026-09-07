@@ -305,9 +305,24 @@ module.exports = function (fastify, opts, done) {
             }
 
             const dayLabel = new Date().toLocaleDateString('it-IT');
+            const closureDate = new Date();
             const closedBars = [];
 
+            // nomi di tutti gli articoli esistenti (a prescindere da bar/categoria/item_sale): serve
+            // per distinguere un articolo davvero cancellato dal catalogo da uno solo momentaneamente
+            // fuori dalle categorie attive del bar, che invece nel registro non deve comparire
+            const allItemNames = new Set((await dbAll('SELECT name FROM items')).map(i => i.name));
+
             for (const barId of barIds) {
+
+                // catalogo prodotti/prezzi del registro vendite: solo gli articoli in vendita
+                // delle categorie attive su QUESTO bar (stesso filtro di /get-items-catalog)
+                const bar = await dbGet('SELECT categories FROM bar WHERE id = ?', [barId]);
+                const barCategories = JSON.parse(bar?.categories || '[]');
+                const catalogItems = barCategories.length === 0 ? [] : await dbAll(
+                    `SELECT name, price FROM items WHERE item_sale = 1 AND lower(category) IN (${barCategories.map(() => '?').join(',')})`,
+                    barCategories.map(c => c.toLowerCase())
+                );
 
                 const rows = await dbAll(`
                 SELECT
@@ -330,7 +345,32 @@ module.exports = function (fastify, opts, done) {
                     items: JSON.parse(row.items)
                 }));
 
-                const { fileName, total: barTotal, receiptData, mimeType } = fastify.excelExport.exportOrders(barOrders, `bar${barId}`);
+                // quantità vendute per prodotto. Un articolo non nel catalogo filtrato per bar viene:
+                // - escluso dal registro se esiste ancora a catalogo (solo categoria/item_sale non attivi su questo bar)
+                // - incluso con il prezzo registrato sull'ordine se è stato cancellato del tutto (altrimenti
+                //   il totale del registro non tornerebbe con l'incasso reale del giorno)
+                const quantita = {};
+                const catalogNames = new Set(catalogItems.map(i => i.name));
+                const prezziFuoriCatalogo = new Map();
+                for (const order of barOrders) {
+                    for (const item of order.items) {
+                        if (catalogNames.has(item.name)) {
+                            quantita[item.name] = (quantita[item.name] || 0) + item.quantity;
+                        } else if (!allItemNames.has(item.name)) {
+                            quantita[item.name] = (quantita[item.name] || 0) + item.quantity;
+                            if (!prezziFuoriCatalogo.has(item.name)) {
+                                prezziFuoriCatalogo.set(item.name, Number(item.price) || 0);
+                            }
+                        }
+                    }
+                }
+
+                const prodotti = [
+                    ...catalogItems.map(i => ({ nome: i.name, prezzo: i.price })),
+                    ...[...prezziFuoriCatalogo].map(([nome, prezzo]) => ({ nome, prezzo }))
+                ];
+
+                const { fileName, total: barTotal, receiptData, mimeType } = await fastify.excelExport.exportVenditeBar(prodotti, quantita, closureDate, `bar${barId}`);
 
                 if (barTotal > 0) {
                     await dbRun(
@@ -373,7 +413,7 @@ module.exports = function (fastify, opts, done) {
             const isAdmin = request.user.role === 'admin';
             const ownOrders = isAdmin ? orders : orders.filter(order => order.barId === request.user.bar_id);
 
-            const { fileName, filePath } = fastify.excelExport.exportOrders(ownOrders);
+            const { fileName, filePath } = await fastify.excelExport.exportOrders(ownOrders);
 
             return reply.send({
                 success: true,

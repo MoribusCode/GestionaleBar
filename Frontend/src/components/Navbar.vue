@@ -50,7 +50,7 @@
         v-else-if="item.isLogout && (!item.visible || item.visible())"
         href="#"
         @click.prevent="handleLogout"
-        class="lg:hidden inline-flex items-center gap-2 justify-center px-4 py-2 mx-1 rounded-lg font-medium leading-none text-red-600 hover:bg-red-100"
+        class="lg:hidden inline-flex items-center gap-2 justify-center px-4 py-2 mx-1 rounded-lg font-medium leading-none text-slate-600 hover:bg-slate-200/70 hover:text-slate-900"
       >
         <i class="pi pi-sign-out leading-none"></i>
         <span class="leading-none">{{ item.label }}</span>

@@ -18,7 +18,7 @@ module.exports = function (fastify, opts, done) {
     // GET - tutte le categorie
     fastify.get('/categories', { preHandler: fastify.authorize([]) }, async (request, reply) => {
         try {
-            const categories = await dbAll('SELECT id, name, auto_complete FROM categories ORDER BY name ASC');
+            const categories = await dbAll('SELECT id, name, auto_complete FROM categories ORDER BY id ASC');
             const parsedCategories = categories.map(category => ({ ...category, auto_complete: !!category.auto_complete }));
             return { categories: parsedCategories };
         } catch (err) {

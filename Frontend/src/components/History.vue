@@ -171,14 +171,14 @@ async function proceedCloseDay() {
       <h1 class="text-center text-3xl font-black text-zinc-900">Storico ordini</h1>
     </div>
 
-    <div v-if="isAdmin" class="flex items-center justify-end gap-2">
+    <div v-if="isAdmin" class="sticky top-0 z-10 flex items-center justify-end gap-2 bg-slate-100 py-2">
       <label class="text-sm font-semibold text-slate-600">Bar</label>
       <Dropdown
         v-model="selectedBarId"
         :options="barFilterOptions"
         optionLabel="label"
         optionValue="value"
-        class="w-64 rounded-xl border border-slate-200 bg-white text-sm"
+        class="w-64 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-700 focus:bg-white"
         @change="onBarFilterChange"
       />
     </div>

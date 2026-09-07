@@ -86,7 +86,52 @@ module.exports = fp(async (fastify, opts) => {
         return { barId, status, clientTransactionId };
     }
 
-    // annulla il pagamento in corso. 
+    function mapSimpleStatus(simpleStatus) {
+        switch (simpleStatus) {
+            case 'SUCCESSFUL':
+            case 'PAID_OUT':
+                return 'successful';
+            case 'CANCELLED':
+                return 'cancelled';
+            case 'FAILED':
+            case 'CANCEL_FAILED':
+            case 'REFUND_FAILED':
+            case 'CHARGEBACK':
+            case 'NON_COLLECTION':
+                return 'failed';
+            default:
+                return 'pending';
+        }
+    }
+
+    // Rete di sicurezza nel caso il webhook di SumUp non arrivi
+    async function pollActiveCheckoutStatus() {
+        const trackedId = activeClientTransactionId;
+        if (!trackedId || !client || !merchantCode) return;
+
+        try {
+            const transaction = await client.transactions.get(merchantCode, { client_transaction_id: trackedId });
+            const status = mapSimpleStatus(transaction.simple_status);
+
+            // se nel frattempo è arrivato il webhook (o è cambiato il checkout tracciato) non c'è più nulla da fare
+            if (status === 'pending' || trackedId !== activeClientTransactionId) return;
+
+            const barId = activeBarId;
+            resetActiveCheckout();
+
+            fastify.log.info(`SumUp poll: risolto client_transaction_id=${trackedId} status=${status}`);
+            if (barId && fastify.io) {
+                fastify.io.to(`bar-${barId}`).emit('pos-payment-status', { status, clientTransactionId: trackedId });
+            }
+        } catch (err) {
+            // spesso è solo il caso in cui la transazione non è ancora comparsa lato SumUp: si ritenta al giro dopo
+            fastify.log.warn(`SumUp poll di stato fallito per client_transaction_id=${trackedId}: ${err.message}`);
+        }
+    }
+
+    setInterval(pollActiveCheckoutStatus, 10000);
+
+    // annulla il pagamento in corso.
     async function terminateCheckout(requestingClientTransactionId) {
         assertConfigured();
 
