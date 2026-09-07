@@ -14,10 +14,10 @@ const categories = ref();
 const selectedCategory = ref(null);
 const categoryToDelete = ref(null);
 
-const formData = ref({ name: '', auto_complete: false });
+const formData = ref({ name: '', auto_complete: false, prefix: '' });
 
 const resetForm = () => {
-  formData.value = { name: '', auto_complete: false };
+  formData.value = { name: '', auto_complete: false, prefix: '' };
   selectedCategory.value = null;
 };
 
@@ -37,7 +37,7 @@ const openCreateDialog = () => {
 
 const openEditDialog = (category) => {
   selectedCategory.value = category;
-  formData.value = { name: category.name, auto_complete: !!category.auto_complete };
+  formData.value = { name: category.name, auto_complete: !!category.auto_complete, prefix: category.prefix || '' };
   managementTemplate.value.openEdit();
 };
 
@@ -105,6 +105,11 @@ onMounted(() => {
     <template #columns>
       <Column field="id" header="ID" style="width: 15%"></Column>
       <Column field="name" header="Nome"></Column>
+      <Column header="Prefisso" style="width: 12%">
+        <template #body="{ data }">
+          <span class="font-mono text-sm text-slate-700">{{ data.prefix || '—' }}</span>
+        </template>
+      </Column>
       <Column header="Auto-completa" style="width: 18%">
         <template #body="{ data }">
           <span
@@ -147,6 +152,16 @@ onMounted(() => {
           class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-700 focus:bg-white"
           required
         />
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Prefisso scontrino</label>
+        <InputText
+          v-model="formData.prefix"
+          placeholder="es. B"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-700 focus:bg-white"
+        />
+        <p class="text-xs text-slate-400">Sigla stampata sul tagliando postazione dello scontrino. Se vuoto viene usata la prima lettera del nome.</p>
       </div>
 
       <!-- Auto-completa -->

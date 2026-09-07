@@ -6,7 +6,12 @@ const PrinterTypes = require("node-thermal-printer").types;
 module.exports = fp(async (fastify, opts) => {
 
     const stampaScontrino = async (orderData, ip) => {
-    const printableWidth = 42;
+
+        if (orderData.paymentMethod == 'contanti') {
+            printer.openCashDrawer();
+        }
+
+        const printableWidth = 42;
 
         const normalizedIp = ip
             ? (ip.startsWith("tcp://") ? ip : `tcp://${ip}:9100`)
@@ -81,7 +86,7 @@ module.exports = fp(async (fastify, opts) => {
         const tagIndent = "    ";
 
         for (const [category, items] of categoryEntries) {
-            const categoryLetter = category.charAt(0).toUpperCase() || "?";
+            const categoryLetter = items[0].prefix || category.charAt(0).toUpperCase() || "?";
 
             // Alcune stampanti ripristinano il margine dopo il taglio precedente.
             await setLeftMargin(printer);

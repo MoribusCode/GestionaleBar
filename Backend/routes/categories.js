@@ -18,7 +18,7 @@ module.exports = function (fastify, opts, done) {
     // GET - tutte le categorie
     fastify.get('/categories', { preHandler: fastify.authorize([]) }, async (request, reply) => {
         try {
-            const categories = await dbAll('SELECT id, name, auto_complete FROM categories ORDER BY id ASC');
+            const categories = await dbAll('SELECT id, name, auto_complete, prefix FROM categories ORDER BY id ASC');
             const parsedCategories = categories.map(category => ({ ...category, auto_complete: !!category.auto_complete }));
             return { categories: parsedCategories };
         } catch (err) {
@@ -29,13 +29,13 @@ module.exports = function (fastify, opts, done) {
     // POST (only admin) - crea una categoria
     fastify.post('/create-category', { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
         try {
-            const { name, auto_complete } = request.body;
+            const { name, auto_complete, prefix } = request.body;
 
             if (!name || !name.trim()) {
                 return reply.code(400).send({ error: 'Il nome della categoria è obbligatorio' });
             }
 
-            const result = await dbRunWithResult('INSERT INTO categories (name, auto_complete) VALUES (?, ?)', [name.trim(), auto_complete ? 1 : 0]);
+            const result = await dbRunWithResult('INSERT INTO categories (name, auto_complete, prefix) VALUES (?, ?, ?)', [name.trim(), auto_complete ? 1 : 0, prefix?.trim() || null]);
             reply.code(201).send({ message: 'Categoria creata con successo', id: result.lastID });
         } catch (err) {
             if (err.message?.includes('UNIQUE')) {
@@ -49,13 +49,13 @@ module.exports = function (fastify, opts, done) {
     fastify.put('/update-category/:id', { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
         try {
             const { id } = request.params;
-            const { name, auto_complete } = request.body;
+            const { name, auto_complete, prefix } = request.body;
 
             if (!name || !name.trim()) {
                 return reply.code(400).send({ error: 'Il nome della categoria è obbligatorio' });
             }
 
-            await dbRun('UPDATE categories SET name = ?, auto_complete = ? WHERE id = ?', [name.trim(), auto_complete ? 1 : 0, id]);
+            await dbRun('UPDATE categories SET name = ?, auto_complete = ?, prefix = ? WHERE id = ?', [name.trim(), auto_complete ? 1 : 0, prefix?.trim() || null, id]);
             reply.code(200).send({ message: 'Categoria aggiornata con successo' });
         } catch (err) {
             if (err.message?.includes('UNIQUE')) {

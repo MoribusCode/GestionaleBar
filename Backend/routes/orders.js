@@ -137,10 +137,14 @@ module.exports = function (fastify, opts, done) {
             );
             const orderId = orderResult.lastID;
 
+            const categories = await dbAll('SELECT name, auto_complete, prefix FROM categories');
             const autoCompleteCategories = new Set(
-                (await dbAll('SELECT name FROM categories WHERE auto_complete = 1'))
-                    .map(c => c.name.toLowerCase())
+                categories.filter(c => c.auto_complete).map(c => c.name.toLowerCase())
             );
+            const prefixByCategory = {};
+            for (const category of categories) {
+                prefixByCategory[category.name] = category.prefix || '';
+            }
 
             const insertItem = db.prepare('INSERT INTO order_items (order_id, item_name, quantity, price, status) VALUES (?, ?, ?, ?, ?)');
 
@@ -170,7 +174,8 @@ module.exports = function (fastify, opts, done) {
                     name: item.name,
                     quantity: item.quantity,
                     price: Number(item.price || 0),
-                    category: item.category
+                    category: item.category,
+                    prefix: prefixByCategory[item.category] || ''
                 })),
                 note: note,
                 totalPrice: totalPrice,

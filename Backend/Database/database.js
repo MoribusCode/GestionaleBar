@@ -114,7 +114,8 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
-      auto_complete INTEGER NOT NULL DEFAULT 0 -- se 1, gli articoli sono già "completato" alla creazione dell'ordine
+      auto_complete INTEGER NOT NULL DEFAULT 0, -- se 1, gli articoli sono già "completato" alla creazione dell'ordine
+      prefix TEXT -- sigla stampata sul tagliando postazione dello scontrino (es. "B" per Bar, "C" per Cucina)
     )
   `);
 
@@ -145,6 +146,9 @@ db.serialize(() => {
     const existingColumns = new Set((columns || []).map((column) => column.name));
     if (!existingColumns.has('auto_complete')) {
       db.run("ALTER TABLE categories ADD COLUMN auto_complete INTEGER NOT NULL DEFAULT 0");
+    }
+    if (!existingColumns.has('prefix')) {
+      db.run("ALTER TABLE categories ADD COLUMN prefix TEXT");
     }
   });
 
@@ -255,6 +259,39 @@ db.serialize(() => {
     const existingColumns = new Set((columns || []).map((column) => column.name));
     if (!existingColumns.has('price')) {
       db.run('ALTER TABLE order_items ADD COLUMN price DECIMAL(10,2)');
+    }
+  });
+
+  // Migrazione: order_items deve avere ON DELETE CASCADE su order_id, altrimenti eliminare un
+  // ordine con "DELETE FROM orders" fallisce con FOREIGN KEY constraint failed appena ci sono
+  // ancora order_items collegati. SQLite non permette di alterare un FOREIGN KEY con ALTER TABLE,
+  // quindi se manca ricostruiamo la tabella (solo sui database creati prima di questa modifica).
+  db.get("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'order_items'", (err, row) => {
+    if (err) {
+      console.error('Errore lettura schema order_items (cascade):', err.message);
+      return;
+    }
+
+    if (row && !row.sql.includes('ON DELETE CASCADE')) {
+      db.serialize(() => {
+        db.run(`
+          CREATE TABLE order_items_new (
+            id INTEGER PRIMARY KEY,
+            order_id INTEGER,
+            item_name TEXT,
+            quantity INTEGER,
+            price DECIMAL(10,2),
+            status TEXT DEFAULT 'in attesa',
+            FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
+          )
+        `);
+        db.run('INSERT INTO order_items_new (id, order_id, item_name, quantity, price, status) SELECT id, order_id, item_name, quantity, price, status FROM order_items');
+        db.run('DROP TABLE order_items');
+        db.run('ALTER TABLE order_items_new RENAME TO order_items', (err) => {
+          if (err) console.error('Errore migrazione order_items (cascade):', err.message);
+          else console.log('Migrazione order_items completata: ON DELETE CASCADE aggiunto');
+        });
+      });
     }
   });
 
