@@ -8,6 +8,7 @@
     "@sumup/sdk": "^0.2.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^16.4.7",
+    "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "fastify": "^5.2.1",
     "fastify-cors": "^6.0.3",

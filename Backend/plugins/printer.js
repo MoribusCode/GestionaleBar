@@ -35,14 +35,16 @@ module.exports = fp(async (fastify, opts) => {
         await setLeftMargin(printer);
 
         // Il logo deve essere aggiunto prima di tutto il testo e del taglio.
-        const logoPath = path.join(__dirname, "../../Frontend/src/assets/images/logo.png");
+        const logoPath = path.join(__dirname, "../../Frontend/src/assets/images/logoScontrino.png");
         printer.alignCenter();
         await printer.printImage(logoPath);
         printer.newLine();
 
         printer.println("DOCUMENTO NON FISCALE");
         printer.drawLine();
+        printer.setTextSize(1, 1);
         printer.println(`Ordine n. ${orderData.order_number || orderData.orderNumber || orderData.id}`);
+        printer.setTextNormal();
         printer.drawLine();
 
         for (const item of orderData.items) {
@@ -96,7 +98,9 @@ module.exports = fp(async (fastify, opts) => {
             printer.println("TAGLIANDO POSTAZIONE");
             printer.println(`CATEGORIA ${categoryLetter}`);
             printer.println(category || "SENZA CATEGORIA");
+            printer.setTextSize(1, 1);
             printer.println(`Ordine n. ${orderData.order_number || orderData.orderNumber || orderData.id}`);
+            printer.setTextNormal();
             printer.println(timestamp);
             printer.drawLine();
 
