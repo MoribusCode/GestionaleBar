@@ -8,6 +8,10 @@ console.log('Connessione al database...');
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'bar.db');
 const db = new sqlite3.Database(dbPath);
 
+// SQLite non applica le foreign key di default: vanno riattivate ad ogni connessione,
+// altrimenti "ON DELETE CASCADE" (vedi migrazione order_items più sotto) non avrebbe effetto.
+db.run('PRAGMA foreign_keys = ON');
+
 // Crea le tabelle se non esistono
 db.serialize(() => {
 
@@ -38,6 +42,7 @@ db.serialize(() => {
       status TEXT DEFAULT 'in attesa',
       total_price DECIMAL(10,2),
       note TEXT,
+      payment_method TEXT,             -- 'contanti' oppure 'pos'
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
       FOREIGN KEY (bar_id) REFERENCES bar(id),
@@ -54,7 +59,7 @@ db.serialize(() => {
       quantity INTEGER,
       price DECIMAL(10,2),
       status TEXT DEFAULT 'in attesa',
-      FOREIGN KEY (order_id) REFERENCES orders(order_id)
+      FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
     )
   `);
 
@@ -66,6 +71,7 @@ db.serialize(() => {
       username TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
       role TEXT DEFAULT 'user',
+      categories TEXT NOT NULL DEFAULT '[]', -- categorie gestite dall'utente "postazione" (JSON array)
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -86,7 +92,10 @@ db.serialize(() => {
       date DATETIME DEFAULT CURRENT_TIMESTAMP,
       amount DECIMAL(10,2) NOT NULL,
       type TEXT NOT NULL CHECK(type IN ('IN', 'OUT')),
-      description TEXT
+      description TEXT,
+      receipt_name TEXT,          -- nome file dell'allegato (es. scontrino/scritura di chiusura giornata)
+      receipt_mime_type TEXT,     -- content-type dell'allegato
+      receipt_data TEXT           -- allegato come data URL base64
     )
   `);
   // Tabella bar
@@ -95,7 +104,8 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       printer_ip TEXT NOT NULL DEFAULT '0.0.0.0',
       order_number INTEGER NOT NULL DEFAULT 0,
-      categories TEXT NOT NULL DEFAULT '[]'
+      categories TEXT NOT NULL DEFAULT '[]',
+      pos_enabled INTEGER NOT NULL DEFAULT 0 -- se il lettore SumUp è abilitato per questo bar
     )
   `);
 
@@ -103,7 +113,9 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE
+      name TEXT NOT NULL UNIQUE,
+      auto_complete INTEGER NOT NULL DEFAULT 0, -- se 1, gli articoli sono già "completato" alla creazione dell'ordine
+      prefix TEXT -- sigla stampata sul tagliando postazione dello scontrino (es. "B" per Bar, "C" per Cucina)
     )
   `);
 
@@ -119,6 +131,24 @@ db.serialize(() => {
       const insertCategory = db.prepare('INSERT OR IGNORE INTO categories (name) VALUES (?)');
       ['Cicchetti', 'Spina', 'Bar', 'Drinks'].forEach((name) => insertCategory.run(name));
       insertCategory.finalize();
+    }
+  });
+
+  // Migrazione leggera: aggiunge auto_complete se mancante (categorie i cui articoli non
+  // richiedono preparazione: completate subito alla creazione dell'ordine, senza passare
+  // dalla coda di una Postazione).
+  db.all('PRAGMA table_info(categories)', (err, columns) => {
+    if (err) {
+      console.error('Errore lettura schema categories:', err.message);
+      return;
+    }
+
+    const existingColumns = new Set((columns || []).map((column) => column.name));
+    if (!existingColumns.has('auto_complete')) {
+      db.run("ALTER TABLE categories ADD COLUMN auto_complete INTEGER NOT NULL DEFAULT 0");
+    }
+    if (!existingColumns.has('prefix')) {
+      db.run("ALTER TABLE categories ADD COLUMN prefix TEXT");
     }
   });
 
@@ -185,6 +215,19 @@ db.serialize(() => {
     });
   });
 
+  // Migrazione leggera: aggiunge pos_enabled se mancante (bar creati prima dell'integrazione SumUp).
+  db.all('PRAGMA table_info(bar)', (err, columns) => {
+    if (err) {
+      console.error('Errore lettura schema bar:', err.message);
+      return;
+    }
+
+    const existingColumns = new Set((columns || []).map((column) => column.name));
+    if (!existingColumns.has('pos_enabled')) {
+      db.run("ALTER TABLE bar ADD COLUMN pos_enabled INTEGER NOT NULL DEFAULT 0");
+    }
+  });
+
   // Migrazione leggera: aggiunge bar_id/order_number se mancanti (ordini creati prima dei bar multipli).
   db.all('PRAGMA table_info(orders)', (err, columns) => {
     if (err) {
@@ -216,6 +259,39 @@ db.serialize(() => {
     const existingColumns = new Set((columns || []).map((column) => column.name));
     if (!existingColumns.has('price')) {
       db.run('ALTER TABLE order_items ADD COLUMN price DECIMAL(10,2)');
+    }
+  });
+
+  // Migrazione: order_items deve avere ON DELETE CASCADE su order_id, altrimenti eliminare un
+  // ordine con "DELETE FROM orders" fallisce con FOREIGN KEY constraint failed appena ci sono
+  // ancora order_items collegati. SQLite non permette di alterare un FOREIGN KEY con ALTER TABLE,
+  // quindi se manca ricostruiamo la tabella (solo sui database creati prima di questa modifica).
+  db.get("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'order_items'", (err, row) => {
+    if (err) {
+      console.error('Errore lettura schema order_items (cascade):', err.message);
+      return;
+    }
+
+    if (row && !row.sql.includes('ON DELETE CASCADE')) {
+      db.serialize(() => {
+        db.run(`
+          CREATE TABLE order_items_new (
+            id INTEGER PRIMARY KEY,
+            order_id INTEGER,
+            item_name TEXT,
+            quantity INTEGER,
+            price DECIMAL(10,2),
+            status TEXT DEFAULT 'in attesa',
+            FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
+          )
+        `);
+        db.run('INSERT INTO order_items_new (id, order_id, item_name, quantity, price, status) SELECT id, order_id, item_name, quantity, price, status FROM order_items');
+        db.run('DROP TABLE order_items');
+        db.run('ALTER TABLE order_items_new RENAME TO order_items', (err) => {
+          if (err) console.error('Errore migrazione order_items (cascade):', err.message);
+          else console.log('Migrazione order_items completata: ON DELETE CASCADE aggiunto');
+        });
+      });
     }
   });
 

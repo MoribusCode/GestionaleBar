@@ -90,3 +90,23 @@ body,
   padding: 1rem !important; /* p-4 equivalent */
   border-radius: 0 0 1.25rem 1.25rem !important;
 }
+
+/* ── ToggleSwitch: colori coerenti con il resto dell'app (slate-300/800 invece del
+   grigio quasi invisibile di default) + fix di un bug del tema, che posiziona l'handle
+   con un top fisso che qui trabocca dal fondo del track invece di restare centrato ── */
+.p-toggleswitch .p-toggleswitch-slider {
+  background: #cbd5e1 !important; /* slate-300 */
+}
+
+.p-toggleswitch[data-p-checked="true"] .p-toggleswitch-slider {
+  background: #1e293b !important; /* slate-800 */
+}
+
+.p-toggleswitch:not(.p-disabled):has(.p-toggleswitch-input:focus-visible) .p-toggleswitch-slider {
+  box-shadow: 0 0 0 2px #1e293b33 !important;
+}
+
+.p-toggleswitch-handle {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}

@@ -149,7 +149,8 @@ async function proceedCloseDay() {
   showCloseDayDialog.value = false;
 
   try {
-    // Il server chiude TUTTI i bar: crea una transazione e un file Excel per ciascuno
+    // Il server chiude tutti i bar se admin, solo il proprio altrimenti; crea una
+    // transazione e un file Excel per ciascun bar coinvolto
     const res = await axios.post(`${API_BASE_URL}/orders/close-day`);
 
     if (res.status === 200) {
@@ -170,14 +171,14 @@ async function proceedCloseDay() {
       <h1 class="text-center text-3xl font-black text-zinc-900">Storico ordini</h1>
     </div>
 
-    <div v-if="isAdmin" class="flex items-center justify-end gap-2">
+    <div v-if="isAdmin" class="sticky top-0 z-10 flex items-center justify-end gap-2 bg-slate-100 py-2">
       <label class="text-sm font-semibold text-slate-600">Bar</label>
       <Dropdown
         v-model="selectedBarId"
         :options="barFilterOptions"
         optionLabel="label"
         optionValue="value"
-        class="w-64 rounded-xl border border-slate-200 bg-white text-sm"
+        class="w-64 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-700 focus:bg-white"
         @change="onBarFilterChange"
       />
     </div>
@@ -306,7 +307,11 @@ async function proceedCloseDay() {
         <div class="p-2">
             <div class="mb-4 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3">
                 <i class="pi pi-exclamation-triangle text-lg text-red-600"></i>
-                <p class="text-sm font-medium text-red-700">Questa operazione esporta e <span class="font-bold underline">cancella tutti gli ordini di tutti i bar</span> di oggi.</p>
+                <p class="text-sm font-medium text-red-700">
+                  Questa operazione esporta e
+                  <span class="font-bold underline">cancella tutti gli ordini {{ isAdmin ? 'di tutti i bar' : 'del tuo bar' }}</span>
+                  di oggi.
+                </p>
             </div>
             <p class="text-sm text-slate-700">
                 Vuoi procedere con la chiusura della giornata?

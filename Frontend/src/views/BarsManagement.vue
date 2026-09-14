@@ -4,6 +4,7 @@ import axios from 'axios';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
+import ToggleSwitch from 'primevue/toggleswitch';
 import ManagementTemplate from '@/components/ManagementTemplate.vue';
 import { useCategories } from '@/composables/useCategories';
 import { API_BASE_URL } from '@/store';
@@ -17,11 +18,12 @@ const barToDelete = ref(null);
 
 const formData = ref({
   printer_ip: '',
-  categories: []
+  categories: [],
+  pos_enabled: false
 });
 
 const resetForm = () => {
-  formData.value = { printer_ip: '', categories: [] };
+  formData.value = { printer_ip: '', categories: [], pos_enabled: false };
   selectedBar.value = null;
 };
 
@@ -43,7 +45,8 @@ const openEditDialog = (bar) => {
   selectedBar.value = bar;
   formData.value = {
     printer_ip: bar.printer_ip,
-    categories: [...(bar.categories || [])]
+    categories: [...(bar.categories || [])],
+    pos_enabled: !!bar.pos_enabled
   };
   managementTemplate.value.openEdit();
 };
@@ -139,6 +142,16 @@ onMounted(() => {
           </div>
         </template>
       </Column>
+      <Column header="POS" style="width: 10%">
+        <template #body="{ data }">
+          <span
+            class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold"
+            :class="data.pos_enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'"
+          >
+            {{ data.pos_enabled ? 'Abilitato' : 'Disabilitato' }}
+          </span>
+        </template>
+      </Column>
       <Column header="Azioni" style="width: 15%">
         <template #body="{ data }">
           <div class="flex gap-2">
@@ -191,6 +204,12 @@ onMounted(() => {
             {{ category }}
           </button>
         </div>
+      </div>
+
+      <!-- Abilita POS -->
+      <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Abilita POS</label>
+        <ToggleSwitch v-model="formData.pos_enabled" />
       </div>
     </template>
 

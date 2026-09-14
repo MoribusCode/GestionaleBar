@@ -60,7 +60,11 @@ function formatDate(value) {
     ? value
     : String(value).replace(' ', 'T');
 
-  const parsed = new Date(normalized);
+  // SQLite salva CURRENT_TIMESTAMP in UTC ma senza indicarlo: senza una "Z" esplicita,
+  // JS interpreta la stringa come ora locale invece di UTC, e il fuso non viene mai
+  // applicato (l'orario mostrato resta quello UTC "grezzo", indietro di 1-2 ore).
+  const hasTimezone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(normalized);
+  const parsed = new Date(hasTimezone ? normalized : `${normalized}Z`);
 
   if (Number.isNaN(parsed.getTime())) {
     return '-';

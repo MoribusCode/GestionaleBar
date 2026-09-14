@@ -6,7 +6,12 @@ const PrinterTypes = require("node-thermal-printer").types;
 module.exports = fp(async (fastify, opts) => {
 
     const stampaScontrino = async (orderData, ip) => {
-    const printableWidth = 42;
+
+        if (orderData.paymentMethod == 'contanti') {
+            printer.openCashDrawer();
+        }
+
+        const printableWidth = 42;
 
         const normalizedIp = ip
             ? (ip.startsWith("tcp://") ? ip : `tcp://${ip}:9100`)
@@ -30,14 +35,16 @@ module.exports = fp(async (fastify, opts) => {
         await setLeftMargin(printer);
 
         // Il logo deve essere aggiunto prima di tutto il testo e del taglio.
-        const logoPath = path.join(__dirname, "../../Frontend/src/assets/images/logo.png");
+        const logoPath = path.join(__dirname, "../../Frontend/src/assets/images/logoScontrino.png");
         printer.alignCenter();
         await printer.printImage(logoPath);
         printer.newLine();
 
         printer.println("DOCUMENTO NON FISCALE");
         printer.drawLine();
+        printer.setTextSize(1, 1);
         printer.println(`Ordine n. ${orderData.order_number || orderData.orderNumber || orderData.id}`);
+        printer.setTextNormal();
         printer.drawLine();
 
         for (const item of orderData.items) {
@@ -81,7 +88,7 @@ module.exports = fp(async (fastify, opts) => {
         const tagIndent = "    ";
 
         for (const [category, items] of categoryEntries) {
-            const categoryLetter = category.charAt(0).toUpperCase() || "?";
+            const categoryLetter = items[0].prefix || category.charAt(0).toUpperCase() || "?";
 
             // Alcune stampanti ripristinano il margine dopo il taglio precedente.
             await setLeftMargin(printer);
@@ -91,7 +98,9 @@ module.exports = fp(async (fastify, opts) => {
             printer.println("TAGLIANDO POSTAZIONE");
             printer.println(`CATEGORIA ${categoryLetter}`);
             printer.println(category || "SENZA CATEGORIA");
+            printer.setTextSize(1, 1);
             printer.println(`Ordine n. ${orderData.order_number || orderData.orderNumber || orderData.id}`);
+            printer.setTextNormal();
             printer.println(timestamp);
             printer.drawLine();
 
