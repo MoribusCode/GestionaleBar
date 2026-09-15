@@ -1,12 +1,12 @@
 # backend/Dockerfile
-FROM node:14
+FROM node:20
 
 # Create app directory
 WORKDIR /app
 
 # Install app dependencies
 COPY package*.json ./
-RUN npm Install --omit=dev
+RUN npm install --omit=dev
 
 # Bundle app source
 COPY . .
