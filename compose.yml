@@ -22,5 +22,5 @@ services:
     env_file:
       - .env
     volumes:
-      - /home/thomas/bar.db:/app/data/bar.db
-      - /home/thomas/exports:/app/exports
+      - /opt/GestionaleBar/bar.db:/app/Database/bar.db
+      - /opt/GestionaleBar/exports:/app/exports
