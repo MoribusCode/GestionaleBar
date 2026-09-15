@@ -178,11 +178,13 @@ function metricsFor() {
           >
             <span
               :style="{ fontSize: metrics.name }"
-              class="line-clamp-2 font-bold leading-[1.15] text-zinc-800"
+              class="line-clamp-2 rounded-md px-1 font-bold leading-[1.15] text-zinc-800"
+              :class="isFavorite(item) ? '' : 'bg-sky-50/60 backdrop-blur-[2px]'"
             >{{ item.name }}</span>
             <span
               :style="{ fontSize: metrics.price }"
-              class="font-extrabold text-zinc-600"
+              class="rounded-md px-1 font-extrabold text-zinc-600"
+              :class="isFavorite(item) ? '' : 'bg-sky-50/60 backdrop-blur-[2px]'"
             >€{{ item.price.toFixed(2) }}</span>
           </div>
         </button>
