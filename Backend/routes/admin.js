@@ -61,7 +61,8 @@ module.exports = function (fastify, opts, done) {
                     return {
                         ...bar,
                         categories: JSON.parse(bar.categories),
-                        pos_enabled: !!bar.pos_enabled
+                        pos_enabled: !!bar.pos_enabled,
+                        print_tags: !!bar.print_tags
                     };
                 });
 
@@ -124,11 +125,11 @@ module.exports = function (fastify, opts, done) {
     fastify.post('/create-bar',
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
             try {
-                const { printer_ip, categories, pos_enabled } = request.body;
+                const { printer_ip, categories, pos_enabled, print_tags } = request.body;
 
                 const db_categories = JSON.stringify(categories);
 
-                await dbRun('INSERT INTO bar (printer_ip, categories, pos_enabled) VALUES (?, ?, ?)', [printer_ip, db_categories, pos_enabled ? 1 : 0]);
+                await dbRun('INSERT INTO bar (printer_ip, categories, pos_enabled, print_tags) VALUES (?, ?, ?, ?)', [printer_ip, db_categories, pos_enabled ? 1 : 0, print_tags === false ? 0 : 1]);
 
                 reply.code(201).send({ message: 'Bar creato con successo' });
             } catch (err) {
@@ -143,11 +144,11 @@ module.exports = function (fastify, opts, done) {
         { preHandler: fastify.authorize(['admin']) }, async (request, reply) => {
             try {
                 const { id } = request.params;
-                const { printer_ip, categories, pos_enabled } = request.body;
+                const { printer_ip, categories, pos_enabled, print_tags } = request.body;
 
                 const db_categories = JSON.stringify(categories);
 
-                await dbRun('UPDATE bar SET printer_ip = ?, categories = ?, pos_enabled = ? WHERE id = ?', [printer_ip, db_categories, pos_enabled ? 1 : 0, id]);
+                await dbRun('UPDATE bar SET printer_ip = ?, categories = ?, pos_enabled = ?, print_tags = ? WHERE id = ?', [printer_ip, db_categories, pos_enabled ? 1 : 0, print_tags === false ? 0 : 1, id]);
 
                 reply.code(200).send({ message: 'Bar aggiornato con successo' });
             } catch (err) {

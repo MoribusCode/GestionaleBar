@@ -105,7 +105,8 @@ db.serialize(() => {
       printer_ip TEXT NOT NULL DEFAULT '0.0.0.0',
       order_number INTEGER NOT NULL DEFAULT 0,
       categories TEXT NOT NULL DEFAULT '[]',
-      pos_enabled INTEGER NOT NULL DEFAULT 0 -- se il lettore SumUp è abilitato per questo bar
+      pos_enabled INTEGER NOT NULL DEFAULT 0, -- se il lettore SumUp è abilitato per questo bar
+      print_tags INTEGER NOT NULL DEFAULT 1 -- se 0, in stampa esce solo lo scontrino, senza i tagliandini postazione
     )
   `);
 
@@ -225,6 +226,9 @@ db.serialize(() => {
     const existingColumns = new Set((columns || []).map((column) => column.name));
     if (!existingColumns.has('pos_enabled')) {
       db.run("ALTER TABLE bar ADD COLUMN pos_enabled INTEGER NOT NULL DEFAULT 0");
+    }
+    if (!existingColumns.has('print_tags')) {
+      db.run("ALTER TABLE bar ADD COLUMN print_tags INTEGER NOT NULL DEFAULT 1");
     }
   });
 

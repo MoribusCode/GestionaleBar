@@ -7,17 +7,13 @@ module.exports = fp(async (fastify, opts) => {
 
     const stampaScontrino = async (orderData, ip) => {
 
-        if (orderData.paymentMethod == 'contanti') {
-            printer.openCashDrawer();
-        }
-
         const printableWidth = 42;
 
         const normalizedIp = ip
             ? (ip.startsWith("tcp://") ? ip : `tcp://${ip}:9100`)
             : "/dev/usb/lp0";
 
-        // Inizializzo la stampante 
+        // Inizializzo la stampante
         const printer = new ThermalPrinter({
             type: PrinterTypes.EPSON,
             interface: normalizedIp,
@@ -25,10 +21,18 @@ module.exports = fp(async (fastify, opts) => {
             width: printableWidth
         });
 
+
         // Controllo se la stampante è pronta
         let isPrinterConnected = await printer.isPrinterConnected();
         if (!isPrinterConnected) {
             throw new Error("Stampante non connessa");
+        }
+
+        // Cassetto aperto con un execute() a parte, PRIMA di comporre lo scontrino: così l'apertura
+        // avviene davvero subito, invece che aspettare in coda dietro tutto il resto della stampa.
+        if (orderData.paymentMethod == 'contanti') {
+            printer.openCashDrawer();
+            await printer.execute();
         }
 
         // Margine sinistro di 16 punti di stampa.
@@ -82,6 +86,49 @@ module.exports = fp(async (fastify, opts) => {
         printer.println("Grazie e arrivederci!");
         printer.partialCut();
 
+        // alcuni bar vogliono solo lo scontrino, senza i tagliandini per le postazioni
+        if (orderData.printTags !== false) {
+            await printerTags(printer, orderData, printableWidth);
+        }
+
+        // Invio il comando di stampa alla stampante
+        try {
+            await printer.execute();
+            console.log("Stampa completata con successo");
+        } catch (error) {
+            console.error("Errore durante la stampa:", error);
+            throw new Error("Errore durante la stampa");
+        }
+    };
+
+    async function setLeftMargin(printer) {
+        await printer.raw(Buffer.from([0x1d, 0x4c, 0x10, 0x00]));
+    }
+
+    function sortByCategory(items) {
+        const groups = {};
+
+        for (const item of items) {
+
+            const key = item.category?.trim().toLowerCase() || "";
+            groups[key] ??= [];
+            groups[key].push(item);
+        }
+
+        return groups;
+    }
+
+    function formatPaymentMethod(paymentMethod) {
+        const labels = {
+            contanti: "Contanti",
+            pos: "POS"
+        };
+
+        return labels[paymentMethod?.toLowerCase()] || paymentMethod || "Non specificato";
+    }
+
+
+    async function printerTags(printer, orderData, printableWidth) {
         const categories = sortByCategory(orderData.items);
         const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
         const categoryEntries = Object.entries(categories);
@@ -126,41 +173,6 @@ module.exports = fp(async (fastify, opts) => {
             printer.bold(false);
             printer.partialCut();
         }
-
-        // Invio il comando di stampa alla stampante
-        try {
-            await printer.execute();
-            console.log("Stampa completata con successo");
-        } catch (error) {
-            console.error("Errore durante la stampa:", error);
-            throw new Error("Errore durante la stampa");
-        }
-    };
-
-    async function setLeftMargin(printer) {
-        await printer.raw(Buffer.from([0x1d, 0x4c, 0x10, 0x00]));
-    }
-
-    function sortByCategory(items) {
-        const groups = {};
-
-        for (const item of items) {
-
-            const key = item.category?.trim().toLowerCase() || "";
-            groups[key] ??= [];
-            groups[key].push(item);
-        }
-
-        return groups;
-    }
-
-    function formatPaymentMethod(paymentMethod) {
-        const labels = {
-            contanti: "Contanti",
-            pos: "POS"
-        };
-
-        return labels[paymentMethod?.toLowerCase()] || paymentMethod || "Non specificato";
     }
 
     fastify.decorate('printer', { stampaScontrino });

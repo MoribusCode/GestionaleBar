@@ -97,6 +97,23 @@ function toggleOrder(id) {
   shown.value = shown.value === id ? null : id;
 }
 
+const reprintingId = ref(null);
+
+async function reprintOrder(id, event) {
+  event.stopPropagation();
+  if (reprintingId.value) return;
+
+  reprintingId.value = id;
+  try {
+    await axios.post(`${API_BASE_URL}/orders/${id}/reprint`, {}, { withCredentials: true });
+  } catch (e) {
+    console.error(`Errore durante la ristampa dell'ordine ${id}:`, e);
+    alert(e.response?.data?.message || 'Errore durante la ristampa dello scontrino');
+  } finally {
+    reprintingId.value = null;
+  }
+}
+
 async function exportToExcel() {
   const mappedOrders = orders.value.map(order => ({
     ID: order.id,
@@ -195,14 +212,25 @@ async function proceedCloseDay() {
                 class="capitalize px-3 py-1"
               />
             </div>
-            <Button
-              icon="pi pi-trash"
-              severity="danger"
-              text
-              rounded
-              class="rounded-xl transition-colors hover:bg-red-100"
-              @click="confirmDeleteOrder(order.id, $event)"
-            />
+            <div class="flex items-center gap-1">
+              <Button
+                icon="pi pi-print"
+                :loading="reprintingId === order.id"
+                text
+                rounded
+                class="rounded-xl text-slate-600 transition-colors hover:bg-slate-200/70"
+                v-tooltip="'Ristampa scontrino'"
+                @click="reprintOrder(order.id, $event)"
+              />
+              <Button
+                icon="pi pi-trash"
+                severity="danger"
+                text
+                rounded
+                class="rounded-xl transition-colors hover:bg-red-100"
+                @click="confirmDeleteOrder(order.id, $event)"
+              />
+            </div>
           </div>
 
           <div v-if="shown === order.id" class="mt-3 border-t border-zinc-200 pt-3">

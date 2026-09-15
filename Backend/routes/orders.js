@@ -126,11 +126,12 @@ module.exports = function (fastify, opts, done) {
                 UPDATE bar
                 SET order_number = order_number + 1
                 WHERE id = ?
-                RETURNING order_number, printer_ip
+                RETURNING order_number, printer_ip, print_tags
             `, [barId]);
 
             const order_number = updateBar.order_number;
             const printer_ip = updateBar.printer_ip;
+            const printTags = !!updateBar.print_tags;
 
             const orderResult = await dbRunWithResult('INSERT INTO orders (total_price, note, bar_id, order_number, payment_method) VALUES (?, ?, ?, ?, ?)',
                 [totalPrice, note, barId, order_number, paymentMethod]
@@ -179,7 +180,8 @@ module.exports = function (fastify, opts, done) {
                 })),
                 note: note,
                 totalPrice: totalPrice,
-                paymentMethod: paymentMethod
+                paymentMethod: paymentMethod,
+                printTags: printTags
             };
 
             try {
@@ -212,6 +214,68 @@ module.exports = function (fastify, opts, done) {
 
         } catch (err) {
             console.error("Errore durante l'inserimento dell'ordine:", err.message);
+            return reply.status(500).send({ message: err.message });
+        }
+    });
+
+    // POST - ristampa lo scontrino di un ordine già esistente (dallo Storico)
+    fastify.post("/orders/:id/reprint", async (request, reply) => {
+        const { id } = request.params;
+
+        try {
+            const order = await dbGet(`
+                SELECT order_id as id, order_number, bar_id as barId, total_price as totalPrice, note, payment_method as paymentMethod
+                FROM orders WHERE order_id = ?
+            `, [id]);
+
+            if (!order) {
+                return reply.status(404).send({ message: "Ordine non trovato" });
+            }
+
+            const isAdmin = request.user.role === 'admin';
+            if (!isAdmin && order.barId !== request.user.bar_id) {
+                return reply.status(403).send({ message: "Non puoi ristampare un ordine di un altro bar" });
+            }
+
+            const bar = await dbGet('SELECT printer_ip, print_tags FROM bar WHERE id = ?', [order.barId]);
+            if (!bar) {
+                return reply.status(404).send({ message: "Bar non trovato" });
+            }
+
+            const items = await dbAll(`
+                SELECT oi.item_name as name, oi.quantity as quantity, oi.price as price, i.category as category
+                FROM order_items oi
+                LEFT JOIN items i ON oi.item_name = i.name
+                WHERE oi.order_id = ?
+            `, [id]);
+
+            const categories = await dbAll('SELECT name, prefix FROM categories');
+            const prefixByCategory = {};
+            for (const category of categories) {
+                prefixByCategory[category.name] = category.prefix || '';
+            }
+
+            const orderData = {
+                id: order.id,
+                order_number: order.order_number,
+                items: items.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: Number(item.price || 0),
+                    category: item.category,
+                    prefix: prefixByCategory[item.category] || ''
+                })),
+                note: order.note || '',
+                totalPrice: order.totalPrice,
+                paymentMethod: order.paymentMethod,
+                printTags: !!bar.print_tags
+            };
+
+            await fastify.printer.stampaScontrino(orderData, bar.printer_ip);
+
+            return reply.send({ message: "Scontrino ristampato con successo" });
+        } catch (err) {
+            console.error("Errore durante la ristampa dello scontrino:", err.message);
             return reply.status(500).send({ message: err.message });
         }
     });

@@ -19,11 +19,12 @@ const barToDelete = ref(null);
 const formData = ref({
   printer_ip: '',
   categories: [],
-  pos_enabled: false
+  pos_enabled: false,
+  print_tags: true
 });
 
 const resetForm = () => {
-  formData.value = { printer_ip: '', categories: [], pos_enabled: false };
+  formData.value = { printer_ip: '', categories: [], pos_enabled: false, print_tags: true };
   selectedBar.value = null;
 };
 
@@ -46,7 +47,8 @@ const openEditDialog = (bar) => {
   formData.value = {
     printer_ip: bar.printer_ip,
     categories: [...(bar.categories || [])],
-    pos_enabled: !!bar.pos_enabled
+    pos_enabled: !!bar.pos_enabled,
+    print_tags: bar.print_tags !== false
   };
   managementTemplate.value.openEdit();
 };
@@ -210,6 +212,14 @@ onMounted(() => {
       <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
         <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Abilita POS</label>
         <ToggleSwitch v-model="formData.pos_enabled" />
+      </div>
+
+      <!-- Stampa tagliandini postazione -->
+      <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+        <div class="min-w-0">
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Tagliandini postazione</label>
+        </div>
+        <ToggleSwitch v-model="formData.print_tags" class="shrink-0" />
       </div>
     </template>
 
