@@ -27,7 +27,7 @@ function addToOrder(id) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-zinc-100 p-3 pt-0! lg:p-4 lg:pt-0! xl:min-h-0">
+  <div class="min-h-screen bg-slate-100 p-3 pt-0! lg:p-4 lg:pt-0! xl:min-h-0">
     <div class="xl:fixed xl:left-4 xl:right-92 xl:top-[96px] xl:bottom-4 xl:overflow-y-auto">
       <ItemsTemplate :items="props.items" @item-added="addToOrder" />
     </div>

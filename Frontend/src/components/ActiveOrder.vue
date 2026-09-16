@@ -106,7 +106,14 @@ function terminatePosPayment() {
   }
 }
 
+// impostato in modo sincrono PRIMA dell'await, per chiudere la finestra in cui un doppio click
+// (es. mentre la stampante sta ancora rispondendo) farebbe partire due volte lo stesso ordine
+const isSubmitting = ref(false);
+
 async function storeOrder(paymentMethod) {
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
+
   try {
     //send the order to the backend
     const response = await axios.post(`${API_BASE_URL}/orders`, {
@@ -134,6 +141,9 @@ async function storeOrder(paymentMethod) {
   }
   catch (e) {
     console.error('Error storing order:', e);
+  }
+  finally {
+    isSubmitting.value = false;
   }
 }
 
@@ -219,16 +229,16 @@ onUnmounted(() => {
       </div>
 
       <div class="flex gap-3">
-        <Button @click="storeOrder('contanti')" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
+        <Button @click="storeOrder('contanti')" :loading="isSubmitting" :disabled="isSubmitting" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
           <i class="pi pi-money-bill text-xl!"></i>
           <span>Contanti</span>
         </Button>
-        <Button v-if="posEnabled" @click="payWithPos" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
+        <Button v-if="posEnabled" @click="payWithPos" :disabled="isSubmitting" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
           <i class="pi pi-credit-card text-xl!"></i>
           <span>POS</span>
         </Button>
       </div>
-      <Button @click="clean" label="Cancella" class="h-10! w-full! rounded-lg! border! border-red-100! bg-red-50! font-bold! text-red-400! hover:bg-red-100!" />
+      <Button @click="clean" :disabled="isSubmitting" label="Cancella" class="h-10! w-full! rounded-lg! border! border-red-100! bg-red-50! font-bold! text-red-400! hover:bg-red-100!" />
     </div>
 
     <div v-if="showConfirmation" class="mt-2 rounded-lg border border-emerald-300 bg-emerald-100 p-2 text-center text-sm font-semibold text-emerald-800">
