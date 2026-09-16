@@ -27,12 +27,12 @@ function addToOrder(id) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-zinc-100 p-3 lg:p-4 xl:min-h-0">
-    <div class="xl:fixed xl:left-4 xl:right-92 xl:top-24 xl:bottom-4 xl:overflow-y-auto">
+  <div class="min-h-screen bg-zinc-100 p-3 pt-0! lg:p-4 lg:pt-0! xl:min-h-0">
+    <div class="xl:fixed xl:left-4 xl:right-92 xl:top-[96px] xl:bottom-4 xl:overflow-y-auto">
       <ItemsTemplate :items="props.items" @item-added="addToOrder" />
     </div>
 
-    <div class="mt-4 xl:fixed xl:right-4 xl:top-24 xl:bottom-4 xl:mt-0 xl:w-85">
+    <div class="mt-4 xl:fixed xl:right-4 xl:top-[96px] xl:bottom-4 xl:mt-0 xl:w-85">
       <ActiveOrder class="h-full" />
     </div>
   </div>

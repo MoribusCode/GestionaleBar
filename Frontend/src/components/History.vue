@@ -188,7 +188,7 @@ async function proceedCloseDay() {
       <h1 class="text-center text-3xl font-black text-zinc-900">Storico ordini</h1>
     </div>
 
-    <div v-if="isAdmin" class="sticky top-0 z-10 flex items-center justify-end gap-2 bg-slate-100 py-2">
+    <div v-if="isAdmin" class="sticky -top-3 z-10 flex items-center justify-end gap-2 bg-slate-100 py-2">
       <label class="text-sm font-semibold text-slate-600">Bar</label>
       <Dropdown
         v-model="selectedBarId"

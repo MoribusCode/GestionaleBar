@@ -1,5 +1,5 @@
 <template>
-  <Menubar :model="menuItems" class="fixed left-0 right-0 top-0 z-50 border-2 border-slate-200/70 bg-transparent py-1.5 lg:py-3 px-8 backdrop-blur-md">
+  <Menubar :model="menuItems" class="fixed left-0 right-0 top-0 z-50 border-2 border-slate-200/70 bg-zinc-100 py-1.5 lg:py-3 px-8">
 
     <template #start>
       <div class="flex items-center gap-2 mr-8 cursor-pointer" @click="$router.push('/')">
