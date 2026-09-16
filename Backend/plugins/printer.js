@@ -39,7 +39,7 @@ module.exports = fp(async (fastify, opts) => {
         await setLeftMargin(printer);
 
         // Il logo deve essere aggiunto prima di tutto il testo e del taglio.
-        const logoPath = path.join(__dirname, "../../Frontend/src/assets/images/logoScontrino.png");
+        const logoPath = path.join(__dirname, "../assets/logoScontrino.png");
         printer.alignCenter();
         await printer.printImage(logoPath);
         printer.newLine();
