@@ -152,6 +152,10 @@ onMounted(() => {
           class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-700 focus:bg-white"
           required
         />
+        <p class="text-xs text-slate-400">
+          Per creare una sotto-categoria usa "_" dopo il nome della categoria madre, es. "Bar_2": gli articoli
+          restano visibili ovunque sia abilitata "Bar", ma in Cassa/Postazione puoi tenerli distinti.
+        </p>
       </div>
 
       <div class="flex flex-col gap-1.5">

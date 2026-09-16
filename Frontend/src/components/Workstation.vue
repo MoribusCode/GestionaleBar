@@ -36,15 +36,23 @@ socket.on('reconnect', () => {
 const showConfirmDialog = ref(false);
 const orderToClose = ref(null);
 
+// "bar" include anche le sue sotto-categorie "bar_2", "bar_3"... ("_" come separatore di gerarchia
+// nel nome), mentre "bar_2" resta specifico e non vede risalire gli item della sola "bar"
+function categoryMatches(itemCategory, assignedCategory) {
+  const item = itemCategory.toLowerCase();
+  const assigned = assignedCategory.toLowerCase();
+  return item === assigned || item.startsWith(`${assigned}_`);
+}
+
 function filterItemsByCategory(orderItems, categories) {
-  const lowerCategories = categories.map((c) => c.toLowerCase());
-  return orderItems.filter(item => lowerCategories.includes(item.category.toLowerCase()));
+  return orderItems.filter(item => categories.some((category) => categoryMatches(item.category, category)));
 }
 
 // le categorie di questa postazione che compaiono davvero negli articoli dell'ordine
 function categoriesInOrder(order) {
-  const orderCategories = new Set(order.items.map((item) => item.category.toLowerCase()));
-  return props.category.filter((category) => orderCategories.has(category.toLowerCase()));
+  return props.category.filter((category) =>
+    order.items.some((item) => categoryMatches(item.category, category))
+  );
 }
 
 async function fetchPendingOrders() {

@@ -20,6 +20,14 @@ module.exports = function (fastify, opts, done) {
         });
     }
 
+    // condizione SQL che matcha una categoria esatta oppure una sua sotto-categoria (es. "bar" include
+    // anche "bar_2", "bar_3"...)
+    function categoryMatchClause(categoryNames) {
+        const conditions = categoryNames.map(() => "lower(category) LIKE ?").join(' OR ');
+        const params = categoryNames.map((name) => `${name.toLowerCase()}%`);
+        return { conditions, params };
+    }
+
     // GET all orders
     fastify.get("/orders", async (request, reply) => {
         try {
@@ -311,14 +319,17 @@ module.exports = function (fastify, opts, done) {
                 return reply.status(400).send({ message: "Non ci sono righe in attesa da chiudere" });
             }
             console.log(orderId, category)
+            // "category" nella clausola sotto risolve sempre a i.category: order_items non ha
+            // una colonna con quel nome, quindi non serve qualificarla per evitare ambiguità
+            const categoryMatch = categoryMatchClause([category]);
             const categoryRows = await dbAll(
-                `SELECT * 
+                `SELECT *
                     FROM order_items oi
                     LEFT JOIN items i ON oi.item_name = i.name
                     WHERE oi.order_id = ?
                     AND oi.status = 'in attesa'
-                    AND lower(i.category) = lower(?)`,
-                [orderId, category]
+                    AND (${categoryMatch.conditions})`,
+                [orderId, ...categoryMatch.params]
             );
 
             console.log(categoryRows.length, ",", pendingRows.length)
@@ -338,9 +349,9 @@ module.exports = function (fastify, opts, done) {
                 await dbRun(
                     `UPDATE order_items
                     SET status = 'parziale'
-                    WHERE order_id = ? 
-                    AND item_name IN (SELECT name FROM items WHERE lower(category) = lower(?))`,
-                    [orderId, category]
+                    WHERE order_id = ?
+                    AND item_name IN (SELECT name FROM items WHERE ${categoryMatch.conditions})`,
+                    [orderId, ...categoryMatch.params]
                 );
 
                 // Aggiorna status ordine se non era già parziale
@@ -388,10 +399,14 @@ module.exports = function (fastify, opts, done) {
                 // delle categorie attive su QUESTO bar (stesso filtro di /get-items-catalog)
                 const bar = await dbGet('SELECT categories FROM bar WHERE id = ?', [barId]);
                 const barCategories = JSON.parse(bar?.categories || '[]');
-                const catalogItems = barCategories.length === 0 ? [] : await dbAll(
-                    `SELECT name, price FROM items WHERE item_sale = 1 AND lower(category) IN (${barCategories.map(() => '?').join(',')})`,
-                    barCategories.map(c => c.toLowerCase())
-                );
+                let catalogItems = [];
+                if (barCategories.length > 0) {
+                    const { conditions, params } = categoryMatchClause(barCategories);
+                    catalogItems = await dbAll(
+                        `SELECT name, price FROM items WHERE item_sale = 1 AND (${conditions})`,
+                        params
+                    );
+                }
 
                 const rows = await dbAll(`
                 SELECT

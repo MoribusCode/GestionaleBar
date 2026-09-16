@@ -16,11 +16,16 @@ function addItem(item) {
   emit('item-added', item.id)
 }
 
+// "bar_2", "bar_3"... confluiscono nel tab della categoria madre "bar"
+function baseCategory(category) {
+  return category?.toLowerCase().split('_')[0] || ''
+}
+
 const groupedItems = computed(() => {
   const groups = {}
 
   for (const item of props.items) {
-    const key = item.category?.toLowerCase() || ''
+    const key = baseCategory(item.category)
     groups[key] ??= []
     groups[key].push(item)
   }

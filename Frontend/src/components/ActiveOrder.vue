@@ -179,11 +179,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col rounded-2xl border-2 border-slate-200/70 bg-white/85 p-3 backdrop-blur-sm">
-    <h1 class="mb-3 text-center text-3xl font-black text-zinc-900">Comanda</h1>
-
+  <div class="flex h-full min-h-0 flex-col overflow-y-auto rounded-2xl border-2 border-slate-200/70 bg-white/85 p-3 backdrop-blur-sm">
     <div class="flex flex-1 flex-col">
-      <ul class="h-80 space-y-2 overflow-y-auto rounded-2xl border-2 border-slate-200/70 bg-slate-50/80 p-3">
+      <ul class="h-[22rem] space-y-2 overflow-y-auto rounded-2xl border-2 border-slate-200/70 bg-slate-50/80 p-3">
         <li class="rounded-md border border-slate-200 bg-white/90 p-2" v-for="(item, index) in list" :key="index">
           <div class="flex items-center justify-between gap-2">
             <span class="truncate text-sm font-medium text-zinc-800"><span class="font-extrabold">{{ item.quantity }}  </span> {{ item.name }}</span>

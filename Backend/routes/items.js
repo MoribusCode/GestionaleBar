@@ -22,6 +22,14 @@ const ITEM_COLUMNS = `
     item_sale, item_purchase, item_favorite, (image_data IS NOT NULL) AS has_image
 `;
 
+// condizione SQL che matcha una categoria esatta oppure una sua sotto-categoria (es. "bar" include
+// anche "bar_2", "bar_3"...)
+function categoryMatchClause(categoryNames) {
+    const conditions = categoryNames.map(() => "lower(category) LIKE ?").join(' OR ');
+    const params = categoryNames.map((name) => `${name.toLowerCase()}%`);
+    return { conditions, params };
+}
+
 module.exports = function (fastify, opts, done) {
 
     // GET - endpoint per fetchare gli item dal db: tutti se admin, solo le categorie del proprio bar altrimenti
@@ -41,10 +49,10 @@ module.exports = function (fastify, opts, done) {
                 const categories = JSON.parse(bar.categories);
                 if (categories.length === 0) return { items: [] };
 
-                const placeholders = categories.map(() => '?').join(',');
+                const { conditions, params } = categoryMatchClause(categories);
                 const items = await dbAll(
-                    `SELECT ${ITEM_COLUMNS} FROM items WHERE lower(category) IN (${placeholders})`,
-                    categories.map(c => c.toLowerCase())
+                    `SELECT ${ITEM_COLUMNS} FROM items WHERE ${conditions}`,
+                    params
                 );
                 return { items };
 
@@ -68,10 +76,10 @@ module.exports = function (fastify, opts, done) {
             const categories = JSON.parse(bar.categories);
             if (categories.length === 0) return { items: [] };
 
-            const placeholders = categories.map(() => '?').join(',');
+            const { conditions, params } = categoryMatchClause(categories);
             const items = await dbAll(
-                `SELECT ${ITEM_COLUMNS} FROM items WHERE lower(category) IN (${placeholders}) AND item_sale = 1`,
-                categories.map(c => c.toLowerCase())
+                `SELECT ${ITEM_COLUMNS} FROM items WHERE (${conditions}) AND item_sale = 1`,
+                params
             );
             return { items };
 
