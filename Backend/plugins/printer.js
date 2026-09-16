@@ -143,7 +143,6 @@ module.exports = fp(async (fastify, opts) => {
             printer.newLine();
             printer.alignCenter();
             printer.println("TAGLIANDO POSTAZIONE");
-            printer.println(`CATEGORIA ${categoryLetter}`);
             printer.println(category || "SENZA CATEGORIA");
             printer.setTextSize(1, 1);
             printer.println(`Ordine n. ${orderData.order_number || orderData.orderNumber || orderData.id}`);
@@ -151,12 +150,14 @@ module.exports = fp(async (fastify, opts) => {
             printer.println(timestamp);
             printer.drawLine();
 
+            printer.setTextSize(1, 1);
             printer.alignLeft();
             for (const item of items) {
                 const itemLabel = `${tagIndent}${item.name} x${Number(item.quantity || 0)}`
                     .slice(0, printableWidth - tagIndent.length);
                 printer.println(itemLabel);
             }
+            printer.setTextNormal();
 
             if (orderData.note) {
                 printer.drawLine();
