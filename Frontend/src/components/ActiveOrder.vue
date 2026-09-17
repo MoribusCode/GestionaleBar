@@ -43,6 +43,41 @@ socket.on('connect_error', (err) => console.error('[POS] socket errore di connes
 const posStatus = ref('idle');
 const posError = ref('');
 let posClientTransactionId = null;
+let posErrorTimeout = null;
+
+// il backend manda err.message grezzo dell'SDK SumUp, tipo '422: {"detail":"...","status":422,...}'
+// (vedi APIError in @sumup/sdk); qui lo parsiamo per mostrare "Detail (status)"
+function formatSumupError(data) {
+  const message = data?.message || '';
+  const match = message.match(/^(\d+):\s*(\{.*\})$/s);
+
+  if (match) {
+    try {
+      const body = JSON.parse(match[2]);
+      const detail = body.detail || body.title;
+      if (detail) return `${detail} (${match[1]})`;
+    } catch (e) {
+      // non era JSON valido, ricado sul messaggio grezzo sotto
+    }
+  }
+
+  return message || 'Errore nell\'avvio del pagamento POS';
+}
+
+function showPosError(message) {
+  posStatus.value = 'error';
+  posError.value = message;
+
+  if (posErrorTimeout) {
+    clearTimeout(posErrorTimeout);
+  }
+  posErrorTimeout = setTimeout(() => {
+    if (posStatus.value === 'error') {
+      posStatus.value = 'idle';
+      posError.value = '';
+    }
+  }, 30000);
+}
 
 // il socket è condiviso da tutte le casse dello stesso bar (stessa room "bar-<id>"): questo
 // controllo garantisce che ogni cassa reagisca solo al pagamento che ha avviato lei stessa,
@@ -64,8 +99,7 @@ async function resolvePosPayment(status) {
     // annullato (es. direttamente dal lettore): stesso comportamento del pulsante "Annulla pagamento"
     posStatus.value = 'idle';
   } else if (status === 'failed') {
-    posStatus.value = 'error';
-    posError.value = 'Pagamento rifiutato dalla carta';
+    showPosError('Pagamento rifiutato dalla carta');
   }
 }
 
@@ -87,8 +121,7 @@ async function payWithPos() {
     posClientTransactionId = response.data.clientTransactionId;
     console.log('[POS] checkout creato, in attesa di:', posClientTransactionId);
   } catch (e) {
-    posStatus.value = 'error';
-    posError.value = e.response?.data?.message || 'Errore nell\'avvio del pagamento POS';
+    showPosError(formatSumupError(e.response?.data));
   }
 }
 
@@ -180,6 +213,9 @@ window.addEventListener('beforeunload', terminatePosPayment);
 onUnmounted(() => {
   if (confirmationTimeout) {
     clearTimeout(confirmationTimeout);
+  }
+  if (posErrorTimeout) {
+    clearTimeout(posErrorTimeout);
   }
   terminatePosPayment();
   window.removeEventListener('beforeunload', terminatePosPayment);
