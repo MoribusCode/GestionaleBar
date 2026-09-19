@@ -101,6 +101,66 @@ module.exports = fp(async (fastify, opts) => {
         }
     };
 
+    // stampa un resoconto sintetico quando si chiude la giornata: ordini, incasso per
+    // metodo di pagamento, totale. riepilogo: { dayLabel, orderCount, contanti, pos, altro, totale }
+    const stampaResocontoChiusura = async (riepilogo, ip) => {
+        const printableWidth = 42;
+
+        const normalizedIp = ip
+            ? (ip.startsWith("tcp://") ? ip : `tcp://${ip}:9100`)
+            : "/dev/usb/lp0";
+
+        const printer = new ThermalPrinter({
+            type: PrinterTypes.EPSON,
+            interface: normalizedIp,
+            characterSet: 'PC858_EURO',
+            width: printableWidth
+        });
+
+        const isPrinterConnected = await printer.isPrinterConnected();
+        if (!isPrinterConnected) {
+            throw new Error("Stampante non connessa");
+        }
+
+        await setLeftMargin(printer);
+
+        printer.alignCenter();
+        printer.bold(true);
+        printer.setTextSize(1, 1);
+        printer.println("RESOCONTO DI CHIUSURA");
+        printer.setTextNormal();
+        printer.bold(false);
+        printer.println(riepilogo.dayLabel);
+        printer.drawLine();
+
+        printer.alignLeft();
+        printer.leftRight("Ordini chiusi", String(riepilogo.orderCount));
+        printer.leftRight("Contanti", `${riepilogo.contanti.toFixed(2)} EUR`);
+        printer.leftRight("POS", `${riepilogo.pos.toFixed(2)} EUR`);
+        if (riepilogo.altro > 0) {
+            printer.leftRight("Altro", `${riepilogo.altro.toFixed(2)} EUR`);
+        }
+        printer.drawLine();
+
+        printer.alignCenter();
+        printer.bold(true);
+        printer.setTextSize(1, 1);
+        printer.println(`TOTALE: ${riepilogo.totale.toFixed(2)} EUR`);
+        printer.setTextNormal();
+        printer.bold(false);
+
+        printer.newLine();
+        printer.partialCut();
+
+        try {
+            await printer.execute();
+            console.log("Resoconto di chiusura stampato con successo");
+        } catch (error) {
+            console.error("Errore durante la stampa del resoconto:", error);
+            throw new Error("Errore durante la stampa del resoconto");
+        }
+    };
+
     async function setLeftMargin(printer) {
         await printer.raw(Buffer.from([0x1d, 0x4c, 0x10, 0x00]));
     }
@@ -176,6 +236,6 @@ module.exports = fp(async (fastify, opts) => {
         }
     }
 
-    fastify.decorate('printer', { stampaScontrino });
+    fastify.decorate('printer', { stampaScontrino, stampaResocontoChiusura });
 
 });

@@ -8,6 +8,7 @@ import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
 import Dropdown from 'primevue/dropdown';
+import ToggleSwitch from 'primevue/toggleswitch';
 import { API_BASE_URL } from '@/store';
 import { useUserStore } from '@/stores/user';
 
@@ -23,12 +24,15 @@ const selectedBarId = ref(ALL_BARS);
 
 const showDeleteOrderDialog = ref(false);
 const orderToDeleteId = ref(null);
+const orderToDeleteNumber = ref(null);
 const showCloseDayDialog = ref(false);
 
 onMounted(() => {
   getOrders();
   if (isAdmin.value) {
     fetchBars();
+  } else {
+    fetchPrintTags();
   }
 });
 
@@ -58,15 +62,17 @@ async function getOrders() {
   }
 }
 
-function confirmDeleteOrder(id, event) {
+function confirmDeleteOrder(order, event) {
   event.stopPropagation();
-  orderToDeleteId.value = id;
+  orderToDeleteId.value = order.id;
+  orderToDeleteNumber.value = order.orderNumber;
   showDeleteOrderDialog.value = true;
 }
 
 function cancelDeleteOrder() {
   showDeleteOrderDialog.value = false;
   orderToDeleteId.value = null;
+  orderToDeleteNumber.value = null;
 }
 
 async function proceedDeleteOrder() {
@@ -86,6 +92,7 @@ async function proceedDeleteOrder() {
   } finally {
     showDeleteOrderDialog.value = false;
     orderToDeleteId.value = null;
+    orderToDeleteNumber.value = null;
   }
 }
 
@@ -114,9 +121,75 @@ async function reprintOrder(id, event) {
   }
 }
 
+const completingId = ref(null);
+const completingAll = ref(false);
+
+async function completeOrder(id, event) {
+  event?.stopPropagation();
+  if (completingId.value || completingAll.value) return;
+
+  completingId.value = id;
+  try {
+    await axios.put(`${API_BASE_URL}/orders/${id}/complete`, {}, { withCredentials: true });
+    const order = orders.value.find(o => o.id === id);
+    if (order) order.status = 'completato';
+  } catch (e) {
+    console.error(`Errore durante il completamento dell'ordine ${id}:`, e);
+    alert(e.response?.data?.message || 'Errore durante il completamento dell\'ordine');
+  } finally {
+    completingId.value = null;
+  }
+}
+
+async function completeAllOrders() {
+  if (completingId.value || completingAll.value) return;
+
+  const toComplete = orders.value.filter(o => o.status !== 'completato');
+  if (toComplete.length === 0) return;
+
+  completingAll.value = true;
+  try {
+    await Promise.all(
+      toComplete.map(o => axios.put(`${API_BASE_URL}/orders/${o.id}/complete`, {}, { withCredentials: true }))
+    );
+    for (const order of toComplete) {
+      order.status = 'completato';
+    }
+  } catch (e) {
+    console.error('Errore durante il completamento di tutti gli ordini:', e);
+    alert('Errore durante il completamento di alcuni ordini');
+  } finally {
+    completingAll.value = false;
+  }
+}
+
+// abilita/disabilita la stampa dei tagliandini postazione per il proprio bar (cassa/postazione,
+// senza dover passare da Gestione Bar che è riservata all'admin)
+const printTags = ref(true);
+const printTagsLoaded = ref(false);
+
+async function fetchPrintTags() {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/bar/print-tags`, { withCredentials: true });
+    printTags.value = !!res.data.print_tags;
+    printTagsLoaded.value = true;
+  } catch (e) {
+    console.error('Errore nel recupero dello stato tagliandini:', e);
+  }
+}
+
+async function onPrintTagsChange() {
+  try {
+    await axios.put(`${API_BASE_URL}/bar/print-tags`, { print_tags: printTags.value }, { withCredentials: true });
+  } catch (e) {
+    console.error('Errore nel salvataggio dello stato tagliandini:', e);
+    printTags.value = !printTags.value; // rollback se la chiamata fallisce
+  }
+}
+
 async function exportToExcel() {
   const mappedOrders = orders.value.map(order => ({
-    ID: order.id,
+    ID: order.orderNumber,
     Totale: order.totalPrice + "€",
     Articoli: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
     Data: new Date().toLocaleDateString('it-IT')
@@ -200,12 +273,20 @@ async function proceedCloseDay() {
       />
     </div>
 
+    <div v-if="!isAdmin && printTagsLoaded" class="flex items-center justify-between gap-3 rounded-2xl border-2 border-slate-200/70 bg-white/85 px-4 py-3 backdrop-blur-sm">
+      <div class="min-w-0">
+        <label class="text-sm font-semibold text-slate-700">Stampa tagliandini postazione</label>
+        <p class="mt-0.5 text-xs text-slate-400">Se disattivato, alla stampa esce solo lo scontrino principale, senza i tagliandini per le postazioni</p>
+      </div>
+      <ToggleSwitch v-model="printTags" class="shrink-0" @change="onPrintTagsChange" />
+    </div>
+
     <div class="flex flex-col items-center gap-3">
       <Card v-for="order in orders" :key="order.id" class="w-full max-w-2xl rounded-2xl border-2 border-slate-200/70 bg-white/85 backdrop-blur-sm">
         <template #content>
           <div class="flex cursor-pointer items-center justify-between gap-3" @click="toggleOrder(order.id)">
             <div class="flex flex-wrap items-center gap-2">
-              <strong class="text-lg text-zinc-900">Ordine #{{ order.id }}</strong>
+              <strong class="text-lg text-zinc-900">Ordine #{{ order.orderNumber }}</strong>
               <Tag
                 :value="order.status"
                 :severity="order.status === 'completato' ? 'success' : order.status === 'parziale' ? 'warn' : 'info'"
@@ -213,6 +294,16 @@ async function proceedCloseDay() {
               />
             </div>
             <div class="flex items-center gap-1">
+              <Button
+                v-if="order.status !== 'completato'"
+                icon="pi pi-check"
+                :loading="completingId === order.id"
+                text
+                rounded
+                class="rounded-xl text-emerald-600 transition-colors hover:bg-emerald-100"
+                v-tooltip="'Completa ordine'"
+                @click="completeOrder(order.id, $event)"
+              />
               <Button
                 icon="pi pi-print"
                 :loading="reprintingId === order.id"
@@ -228,7 +319,7 @@ async function proceedCloseDay() {
                 text
                 rounded
                 class="rounded-xl transition-colors hover:bg-red-100"
-                @click="confirmDeleteOrder(order.id, $event)"
+                @click="confirmDeleteOrder(order, $event)"
               />
             </div>
           </div>
@@ -267,6 +358,16 @@ async function proceedCloseDay() {
 
     <div class="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/70 bg-white/95 px-3 py-4 backdrop-blur-sm lg:px-5">
       <div class="mx-auto flex w-full max-w-5xl flex-wrap justify-end gap-3">
+        <div v-if="orders.some(o => o.status !== 'completato')" class="rounded-xl border border-slate-200 bg-slate-50/80 p-1">
+          <Button
+            label="Completa tutti"
+            icon="pi pi-check-circle"
+            severity="success"
+            :loading="completingAll"
+            class="h-9! w-40!"
+            @click="completeAllOrders"
+          />
+        </div>
         <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-1">
           <Button label="Esporta in Excel" icon="pi pi-file-excel" class="h-9! w-40!" @click="exportToExcel" />
         </div>
@@ -296,7 +397,7 @@ async function proceedCloseDay() {
                 <p class="text-sm font-medium text-red-700">Questa operazione non può essere annullata.</p>
             </div>
             <p class="text-sm text-slate-700">
-                Sei sicuro di voler eliminare l'ordine <span class="font-semibold text-slate-900">#{{ orderToDeleteId }}</span>?
+                Sei sicuro di voler eliminare l'ordine <span class="font-semibold text-slate-900">#{{ orderToDeleteNumber }}</span>?
             </p>
         </div>
         <template #footer>

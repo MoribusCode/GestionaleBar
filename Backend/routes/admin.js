@@ -5,8 +5,37 @@ const util = require('util');
 
 const dbAll = util.promisify(db.all).bind(db);
 const dbRun = util.promisify(db.run).bind(db);
+const dbGet = util.promisify(db.get).bind(db);
 
 module.exports = function (fastify, opts, done) {
+
+    // GET/PUT - stato tagliandini del PROPRIO bar. A differenza di /bars (solo admin), qui
+    // qualunque utente con un bar associato (cassa, postazione) può leggere/cambiare
+    // l'impostazione per il bar a cui è collegato, senza passare da Gestione Bar.
+    fastify.get('/bar/print-tags', { preHandler: fastify.authorize([]) }, async (request, reply) => {
+        try {
+            if (!request.user.bar_id) {
+                return reply.code(400).send({ error: 'Utente non associato a un bar' });
+            }
+            const bar = await dbGet('SELECT print_tags FROM bar WHERE id = ?', [request.user.bar_id]);
+            return { print_tags: !!(bar && bar.print_tags) };
+        } catch (err) {
+            reply.code(500).send({ error: err.message });
+        }
+    });
+
+    fastify.put('/bar/print-tags', { preHandler: fastify.authorize([]) }, async (request, reply) => {
+        try {
+            if (!request.user.bar_id) {
+                return reply.code(400).send({ error: 'Utente non associato a un bar' });
+            }
+            const { print_tags } = request.body;
+            await dbRun('UPDATE bar SET print_tags = ? WHERE id = ?', [print_tags ? 1 : 0, request.user.bar_id]);
+            return { message: 'Impostazione aggiornata', print_tags: !!print_tags };
+        } catch (err) {
+            reply.code(500).send({ error: err.message });
+        }
+    });
 
     // endpoint per creare l'utente
     fastify.post('/create-user',

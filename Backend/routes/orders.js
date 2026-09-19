@@ -42,6 +42,7 @@ module.exports = function (fastify, opts, done) {
             const rows = await dbAll(`
             SELECT
                 o.order_id as id,
+                o.order_number as orderNumber,
                 o.bar_id as barId,
                 o.status as status,
                 o.total_price as totalPrice,
@@ -370,6 +371,32 @@ module.exports = function (fastify, opts, done) {
         }
     });
 
+    // PUT - segna un intero ordine come completato (override manuale dallo Storico, a prescindere
+    // dalla categoria/postazione)
+    fastify.put("/orders/:orderId/complete", async (request, reply) => {
+        const { orderId } = request.params;
+
+        try {
+            const order = await dbGet("SELECT bar_id as barId, status FROM orders WHERE order_id = ?", [orderId]);
+            if (!order) {
+                return reply.status(404).send({ message: "Ordine non trovato" });
+            }
+
+            const isAdmin = request.user.role === 'admin';
+            if (!isAdmin && order.barId !== request.user.bar_id) {
+                return reply.status(403).send({ message: "Non puoi modificare un ordine di un altro bar" });
+            }
+
+            await dbRun("UPDATE order_items SET status = 'completato' WHERE order_id = ?", [orderId]);
+            await dbRun("UPDATE orders SET status = 'completato' WHERE order_id = ?", [orderId]);
+
+            return { orderId, status: "completato" };
+        } catch (err) {
+            console.error("Errore completamento ordine:", err.message);
+            return reply.status(500).send({ message: err.message });
+        }
+    });
+
     // POST - Chiudi giornata: chiude TUTTI i bar, creando per ciascuno una transazione
     // e un file Excel separato con i suoi ordini, poi svuota ordini e order_items.
     fastify.post("/orders/close-day", async (request, reply) => {
@@ -397,7 +424,7 @@ module.exports = function (fastify, opts, done) {
 
                 // catalogo prodotti/prezzi del registro vendite: solo gli articoli in vendita
                 // delle categorie attive su QUESTO bar (stesso filtro di /get-items-catalog)
-                const bar = await dbGet('SELECT categories FROM bar WHERE id = ?', [barId]);
+                const bar = await dbGet('SELECT categories, printer_ip FROM bar WHERE id = ?', [barId]);
                 const barCategories = JSON.parse(bar?.categories || '[]');
                 let catalogItems = [];
                 if (barCategories.length > 0) {
@@ -412,6 +439,7 @@ module.exports = function (fastify, opts, done) {
                 SELECT
                     o.order_id as id,
                     o.total_price as totalPrice,
+                    o.payment_method as paymentMethod,
                     json_group_array(
                         json_object('name', oi.item_name, 'quantity', oi.quantity, 'price', oi.price)
                     ) as items
@@ -426,6 +454,7 @@ module.exports = function (fastify, opts, done) {
                 const barOrders = rows.map(row => ({
                     id: row.id,
                     totalPrice: row.totalPrice,
+                    paymentMethod: row.paymentMethod,
                     items: JSON.parse(row.items)
                 }));
 
@@ -464,7 +493,33 @@ module.exports = function (fastify, opts, done) {
                     );
                 }
 
+                // riepilogo per metodo di pagamento, usato solo per il resoconto stampato
+                let contanti = 0, posAmount = 0, altro = 0;
+                for (const order of barOrders) {
+                    const amount = Number(order.totalPrice) || 0;
+                    if (order.paymentMethod === 'contanti') contanti += amount;
+                    else if (order.paymentMethod === 'pos') posAmount += amount;
+                    else altro += amount;
+                }
+
+                try {
+                    await fastify.printer.stampaResocontoChiusura({
+                        dayLabel,
+                        orderCount: barOrders.length,
+                        contanti,
+                        pos: posAmount,
+                        altro,
+                        totale: contanti + posAmount + altro
+                    }, bar.printer_ip);
+                } catch (err) {
+                    console.error("Errore durante la stampa del resoconto di chiusura:", err.message);
+                }
+
                 await dbRun('DELETE FROM orders WHERE bar_id = ?', [barId]);
+
+                // il numero ordine sullo scontrino riparte da 1 ogni giorno, altrimenti cresce
+                // all'infinito e perde di senso quanto l'id del database
+                await dbRun('UPDATE bar SET order_number = 0 WHERE id = ?', [barId]);
 
                 closedBars.push({ barId, total: barTotal, fileName, orderCount: barOrders.length });
             }
