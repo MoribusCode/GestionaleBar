@@ -13,7 +13,7 @@ const emit = defineEmits(['orderStored'])
 const list = ref([]);
 const orderNote = ref('');
 const showConfirmation = ref(false);
-const lastOrderId = ref(null);
+const lastOrderNumber = ref(null);
 let confirmationTimeout = null;
 
 // se il bar di questa cassa non ha il POS abilitato, nascondiamo il pulsante
@@ -181,7 +181,7 @@ async function storeOrder(paymentMethod) {
     });
     console.log('Order stored successfully', response.data);
 
-    lastOrderId.value = response.data?.id ?? null;
+    lastOrderNumber.value = response.data?.orderNumber ?? null;
 
     showConfirmation.value = true;
 
@@ -314,7 +314,7 @@ onUnmounted(() => {
     </div>
 
     <div v-if="showConfirmation" class="mt-2 rounded-lg border border-emerald-300 bg-emerald-100 p-2 text-center text-sm font-semibold text-emerald-800">
-      Ordine {{ lastOrderId ? '#' + lastOrderId : '' }} inviato!
+      Ordine {{ lastOrderNumber ? '#' + lastOrderNumber : '' }} inviato!
     </div>
 
     <CashPaymentDialog

@@ -282,6 +282,7 @@ module.exports = function (fastify, opts, done) {
 
             return reply.status(201).send({
                 id: orderId,
+                orderNumber: order_number,
                 status: "pending",
                 items: request.body.order,
                 note: note,
