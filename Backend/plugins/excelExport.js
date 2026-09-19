@@ -1,5 +1,4 @@
 const fp = require('fastify-plugin');
-const XLSX = require('xlsx');
 const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
@@ -46,58 +45,13 @@ async function writeExportFile(fileName, buildBuffer) {
 
 module.exports = fp(async (fastify, opts) => {
 
-    async function exportOrders(orders, label = '') {
-        const dayLabel = new Date().toLocaleDateString('it-IT');
-
-        const mappedOrders = orders.map(order => ({
-            ID: order.id,
-            Totale: order.totalPrice,
-            Articoli: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
-            Data: dayLabel
-        }));
-
-        const total = orders.reduce((sum, order) => sum + (Number(order.totalPrice) || 0), 0);
-
-        mappedOrders.push({});
-        mappedOrders.push({ ID: 'Totale giornata', Totale: total, Articoli: '', Data: '' });
-
-        const worksheet = XLSX.utils.json_to_sheet(mappedOrders);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-
-        // seconda pagina: quantità e subtotale di costo per articolo, sommati su tutti gli ordini
-        const itemTotals = {};
-        for (const order of orders) {
-            for (const item of order.items) {
-                if (!itemTotals[item.name]) itemTotals[item.name] = { quantity: 0, subtotal: 0 };
-                itemTotals[item.name].quantity += item.quantity;
-                itemTotals[item.name].subtotal += item.quantity * (Number(item.price) || 0);
-            }
-        }
-        const mappedItemTotals = Object.entries(itemTotals).map(([name, t]) => ({
-            Articolo: name,
-            Quantità: t.quantity,
-            Subtotale: t.subtotal
-        }));
-        const itemTotalsSheet = XLSX.utils.json_to_sheet(mappedItemTotals);
-        XLSX.utils.book_append_sheet(workbook, itemTotalsSheet, "OrderTotal");
-
-        const suffix = label ? `_${label}` : '';
-        const fileName = `orders${suffix}_${getFileTimestamp()}.xlsx`;
-        const { filePath, receiptData } = await writeExportFile(fileName, () => XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }));
-
-        return { fileName, filePath, total, receiptData, mimeType: XLSX_MIME_TYPE };
-    }
-
-    // Registro vendite per tipo di prodotto (colonne = prodotti, 2 righe: quantità + importo),
-    // per un singolo giorno di chiusura.
+    // Scrive il registro vendite (colonne = prodotti, 2 righe: quantità + importo) su un worksheet
+    // già creato, così può essere riusato sia per un file con un solo foglio (chiusura giornata)
+    // sia per un workbook con più fogli, uno per bar (export manuale dallo storico).
     //   prodotti: [{ nome, prezzo }]  elenco colonne, in ordine
     //   quantita: { nomeProdotto: pezziVenduti }
-    //   data: Date del giorno a cui si riferisce la chiusura
-    async function exportVenditeBar(prodotti, quantita, data, label = '') {
-        const wb = new ExcelJS.Workbook();
-        const ws = wb.addWorksheet('Vendite Bar');
-
+    //   data: Date del giorno a cui si riferisce l'export
+    function populateVenditeBarSheet(ws, prodotti, quantita, data) {
         const N_PROD = prodotti.length;
         const COL_DATA = 1;
         const COL_PROD_START = 2;
@@ -241,7 +195,15 @@ module.exports = fp(async (fastify, opts) => {
         ws.getColumn(COL_TOT_GIORNO).width = 12;
         ws.getColumn(COL_TOT_GENERALE).width = 14;
 
-        const total = prodotti.reduce((sum, p) => sum + (quantita[p.nome] || 0) * p.prezzo, 0);
+        return prodotti.reduce((sum, p) => sum + (quantita[p.nome] || 0) * p.prezzo, 0);
+    }
+
+    // Registro vendite su un unico foglio, salvato su disco: usato dalla chiusura giornata,
+    // dove ogni bar chiuso produce il proprio file/transazione.
+    async function exportVenditeBar(prodotti, quantita, data, label = '') {
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('Vendite Bar');
+        const total = populateVenditeBarSheet(ws, prodotti, quantita, data);
 
         const suffix = label ? `_${label}` : '';
         const fileName = `venditeBar${suffix}_${getFileTimestamp()}.xlsx`;
@@ -250,6 +212,23 @@ module.exports = fp(async (fastify, opts) => {
         return { fileName, filePath, total, receiptData, mimeType: XLSX_MIME_TYPE };
     }
 
-    fastify.decorate('excelExport', { exportOrders, exportVenditeBar });
+    // Stesso registro vendite, ma su più fogli in un unico workbook (uno per bar): usato per
+    // l'export manuale dallo storico senza chiudere la giornata, non salva nulla su disco.
+    //   sheets: [{ sheetName, prodotti, quantita, data }]
+    async function exportVenditeBarWorkbook(sheets) {
+        const wb = new ExcelJS.Workbook();
+
+        for (const sheet of sheets) {
+            const ws = wb.addWorksheet(sheet.sheetName);
+            populateVenditeBarSheet(ws, sheet.prodotti, sheet.quantita, sheet.data);
+        }
+
+        const fileName = `venditeBar_${getFileTimestamp()}.xlsx`;
+        const buffer = await wb.xlsx.writeBuffer();
+
+        return { buffer, fileName, mimeType: XLSX_MIME_TYPE };
+    }
+
+    fastify.decorate('excelExport', { exportVenditeBar, exportVenditeBarWorkbook });
 
 });

@@ -1,7 +1,6 @@
 <script setup>
 import axios from 'axios';
 import { computed, onMounted, ref } from 'vue';
-import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
@@ -187,43 +186,24 @@ async function onPrintTagsChange() {
   }
 }
 
+// stesso registro "Vendite Bar" generato dalla chiusura giornata (colonne per prodotto,
+// formule, evidenziazione weekend), scaricato per gli ordini attualmente aperti senza chiuderli
 async function exportToExcel() {
-  const mappedOrders = orders.value.map(order => ({
-    ID: order.orderNumber,
-    Totale: order.totalPrice + "€",
-    Articoli: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
-    Data: new Date().toLocaleDateString('it-IT')
-  }));
-
-  const totalSum = orders.value.reduce((sum, order) => sum + order.totalPrice, 0);
-  mappedOrders.push({});
-  mappedOrders.push({
-    ID: 'TotaleGiornata',
-    Totale: totalSum + "€",
-    Articoli: ''
-  });
-
-  const worksheet = XLSX.utils.json_to_sheet(mappedOrders);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-
-  // buffer to convert workbook into binary
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  // downloadable file from browser (blob)
-  const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-
-  // download the file locally
-  saveAs(data, `orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
-
   try {
-    await axios.post(`${API_BASE_URL}/export-excel`, {
-      orders: orders.value
-    }, {
-      withCredentials: true
+    const params = isAdmin.value && selectedBarId.value !== ALL_BARS ? { bar_id: selectedBarId.value } : {};
+    const response = await axios.get(`${API_BASE_URL}/export-excel`, {
+      params,
+      withCredentials: true,
+      responseType: 'blob'
     });
-    console.log('Excel file saved on server');
+
+    const disposition = response.headers['content-disposition'] || '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const fileName = match ? match[1] : `venditeBar_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    saveAs(response.data, fileName);
   } catch (error) {
-    console.error('Error saving Excel on server:', error);
+    console.error('Errore nell\'esportazione Excel:', error);
   }
 }
 

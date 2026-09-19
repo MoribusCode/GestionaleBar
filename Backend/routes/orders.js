@@ -28,6 +28,73 @@ module.exports = function (fastify, opts, done) {
         return { conditions, params };
     }
 
+    // calcola prodotti/quantità per il registro "Vendite Bar" di un bar, a partire dagli ordini
+    // attualmente aperti su quel bar (non ancora chiusi). Usato sia dalla chiusura giornata sia
+    // dall'export manuale dallo storico, cosi producono lo stesso identico registro.
+    // Ritorna null se il bar non ha ordini aperti.
+    async function computeVenditeBarData(barId, allItemNames) {
+        const bar = await dbGet('SELECT categories, printer_ip FROM bar WHERE id = ?', [barId]);
+        const barCategories = JSON.parse(bar?.categories || '[]');
+        let catalogItems = [];
+        if (barCategories.length > 0) {
+            const { conditions, params } = categoryMatchClause(barCategories);
+            catalogItems = await dbAll(
+                `SELECT name, price FROM items WHERE item_sale = 1 AND (${conditions})`,
+                params
+            );
+        }
+
+        const rows = await dbAll(`
+        SELECT
+            o.order_id as id,
+            o.total_price as totalPrice,
+            o.payment_method as paymentMethod,
+            json_group_array(
+                json_object('name', oi.item_name, 'quantity', oi.quantity, 'price', oi.price)
+            ) as items
+        FROM orders o
+        JOIN order_items oi ON oi.order_id = o.order_id
+        WHERE o.bar_id = ?
+        GROUP BY o.order_id
+        `, [barId]);
+
+        if (rows.length === 0) return null;
+
+        const barOrders = rows.map(row => ({
+            id: row.id,
+            totalPrice: row.totalPrice,
+            paymentMethod: row.paymentMethod,
+            items: JSON.parse(row.items)
+        }));
+
+        // quantità vendute per prodotto. Un articolo non nel catalogo filtrato per bar viene:
+        // - escluso dal registro se esiste ancora a catalogo (solo categoria/item_sale non attivi su questo bar)
+        // - incluso con il prezzo registrato sull'ordine se è stato cancellato del tutto (altrimenti
+        //   il totale del registro non tornerebbe con l'incasso reale del giorno)
+        const quantita = {};
+        const catalogNames = new Set(catalogItems.map(i => i.name));
+        const prezziFuoriCatalogo = new Map();
+        for (const order of barOrders) {
+            for (const item of order.items) {
+                if (catalogNames.has(item.name)) {
+                    quantita[item.name] = (quantita[item.name] || 0) + item.quantity;
+                } else if (!allItemNames.has(item.name)) {
+                    quantita[item.name] = (quantita[item.name] || 0) + item.quantity;
+                    if (!prezziFuoriCatalogo.has(item.name)) {
+                        prezziFuoriCatalogo.set(item.name, Number(item.price) || 0);
+                    }
+                }
+            }
+        }
+
+        const prodotti = [
+            ...catalogItems.map(i => ({ nome: i.name, prezzo: i.price })),
+            ...[...prezziFuoriCatalogo].map(([nome, prezzo]) => ({ nome, prezzo }))
+        ];
+
+        return { bar, barOrders, prodotti, quantita };
+    }
+
     // GET all orders
     fastify.get("/orders", async (request, reply) => {
         try {
@@ -422,66 +489,9 @@ module.exports = function (fastify, opts, done) {
 
             for (const barId of barIds) {
 
-                // catalogo prodotti/prezzi del registro vendite: solo gli articoli in vendita
-                // delle categorie attive su QUESTO bar (stesso filtro di /get-items-catalog)
-                const bar = await dbGet('SELECT categories, printer_ip FROM bar WHERE id = ?', [barId]);
-                const barCategories = JSON.parse(bar?.categories || '[]');
-                let catalogItems = [];
-                if (barCategories.length > 0) {
-                    const { conditions, params } = categoryMatchClause(barCategories);
-                    catalogItems = await dbAll(
-                        `SELECT name, price FROM items WHERE item_sale = 1 AND (${conditions})`,
-                        params
-                    );
-                }
-
-                const rows = await dbAll(`
-                SELECT
-                    o.order_id as id,
-                    o.total_price as totalPrice,
-                    o.payment_method as paymentMethod,
-                    json_group_array(
-                        json_object('name', oi.item_name, 'quantity', oi.quantity, 'price', oi.price)
-                    ) as items
-                FROM orders o
-                JOIN order_items oi ON oi.order_id = o.order_id
-                WHERE o.bar_id = ?
-                GROUP BY o.order_id
-                `, [barId]);
-
-                if (rows.length === 0) continue; // niente da chiudere per questo bar
-
-                const barOrders = rows.map(row => ({
-                    id: row.id,
-                    totalPrice: row.totalPrice,
-                    paymentMethod: row.paymentMethod,
-                    items: JSON.parse(row.items)
-                }));
-
-                // quantità vendute per prodotto. Un articolo non nel catalogo filtrato per bar viene:
-                // - escluso dal registro se esiste ancora a catalogo (solo categoria/item_sale non attivi su questo bar)
-                // - incluso con il prezzo registrato sull'ordine se è stato cancellato del tutto (altrimenti
-                //   il totale del registro non tornerebbe con l'incasso reale del giorno)
-                const quantita = {};
-                const catalogNames = new Set(catalogItems.map(i => i.name));
-                const prezziFuoriCatalogo = new Map();
-                for (const order of barOrders) {
-                    for (const item of order.items) {
-                        if (catalogNames.has(item.name)) {
-                            quantita[item.name] = (quantita[item.name] || 0) + item.quantity;
-                        } else if (!allItemNames.has(item.name)) {
-                            quantita[item.name] = (quantita[item.name] || 0) + item.quantity;
-                            if (!prezziFuoriCatalogo.has(item.name)) {
-                                prezziFuoriCatalogo.set(item.name, Number(item.price) || 0);
-                            }
-                        }
-                    }
-                }
-
-                const prodotti = [
-                    ...catalogItems.map(i => ({ nome: i.name, prezzo: i.price })),
-                    ...[...prezziFuoriCatalogo].map(([nome, prezzo]) => ({ nome, prezzo }))
-                ];
+                const venditeData = await computeVenditeBarData(barId, allItemNames);
+                if (!venditeData) continue; // niente da chiudere per questo bar
+                const { bar, barOrders, prodotti, quantita } = venditeData;
 
                 const { fileName, total: barTotal, receiptData, mimeType } = await fastify.excelExport.exportVenditeBar(prodotti, quantita, closureDate, `bar${barId}`);
 
@@ -540,31 +550,55 @@ module.exports = function (fastify, opts, done) {
     });
 
 
-    // POST - esporta in excel tutte le comande
-    fastify.post("/export-excel", async (request, reply) => {
+    // GET - esporta il registro "Vendite Bar", lo stesso formato usato dalla chiusura giornata,
+    // per gli ordini attualmente aperti (senza chiuderli). admin: bar_id opzionale in query
+    // (se assente, un foglio per ogni bar con ordini aperti); altri ruoli: sempre il proprio bar.
+    fastify.get("/export-excel", async (request, reply) => {
         try {
-            const { orders } = request.body;
+            const isAdmin = request.user.role === 'admin';
+            let barIds;
 
-            if (!orders || !Array.isArray(orders)) {
-                return reply.status(400).send({ message: "Orders data is required" });
+            if (isAdmin) {
+                if (request.query.bar_id) {
+                    barIds = [Number(request.query.bar_id)];
+                } else {
+                    const bars = await dbAll('SELECT id FROM bar');
+                    barIds = bars.map(bar => bar.id);
+                }
+            } else {
+                barIds = [request.user.bar_id];
             }
 
-            const isAdmin = request.user.role === 'admin';
-            const ownOrders = isAdmin ? orders : orders.filter(order => order.barId === request.user.bar_id);
+            const allItemNames = new Set((await dbAll('SELECT name FROM items')).map(i => i.name));
+            const exportDate = new Date();
 
-            const { fileName, filePath } = await fastify.excelExport.exportOrders(ownOrders);
+            const sheets = [];
+            for (const barId of barIds) {
+                const venditeData = await computeVenditeBarData(barId, allItemNames);
+                if (!venditeData) continue;
 
-            return reply.send({
-                success: true,
-                message: 'Excel file saved successfully on server',
-                fileName: fileName,
-                filePath: filePath
-            });
+                sheets.push({
+                    sheetName: barIds.length > 1 ? `Bar ${barId}` : 'Vendite Bar',
+                    prodotti: venditeData.prodotti,
+                    quantita: venditeData.quantita,
+                    data: exportDate
+                });
+            }
+
+            if (sheets.length === 0) {
+                return reply.status(404).send({ message: "Nessun ordine da esportare" });
+            }
+
+            const { buffer, fileName, mimeType } = await fastify.excelExport.exportVenditeBarWorkbook(sheets);
+
+            reply.header('Content-Disposition', `attachment; filename="${fileName}"`);
+            reply.type(mimeType);
+            return reply.send(buffer);
         } catch (error) {
-            console.error('Error saving Excel file:', error);
+            console.error('Error exporting Vendite Bar:', error);
             return reply.status(500).send({
                 success: false,
-                message: 'Error saving Excel file',
+                message: 'Error exporting Vendite Bar',
                 error: error.message
             });
         }

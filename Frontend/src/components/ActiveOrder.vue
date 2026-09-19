@@ -280,7 +280,12 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="posStatus === 'waiting'" class="flex flex-col items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-4 text-center">
+    <div v-if="isSubmitting" class="flex flex-col items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-4 text-center">
+      <i class="pi pi-spin pi-spinner text-2xl text-slate-600"></i>
+      <span class="text-sm font-semibold text-slate-700">Invio ordine in corso, un attimo...</span>
+    </div>
+
+    <div v-else-if="posStatus === 'waiting'" class="flex flex-col items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-4 text-center">
       <i class="pi pi-spin pi-spinner text-2xl text-slate-600"></i>
       <span class="text-sm font-semibold text-slate-700">In attesa del pagamento sul POS...</span>
       <Button @click="terminatePosPayment" label="Annulla pagamento" class="h-9! rounded-lg! border! border-red-100! bg-red-50! font-bold! text-red-400! hover:bg-red-100!" />
@@ -296,16 +301,16 @@ onUnmounted(() => {
       </div>
 
       <div class="flex gap-3">
-        <Button @click="openCashDialog" :loading="isSubmitting" :disabled="isSubmitting" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
+        <Button @click="openCashDialog" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
           <i class="pi pi-money-bill text-xl!"></i>
           <span>Contanti</span>
         </Button>
-        <Button v-if="posEnabled" @click="payWithPos" :disabled="isSubmitting" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
+        <Button v-if="posEnabled" @click="payWithPos" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
           <i class="pi pi-credit-card text-xl!"></i>
           <span>POS</span>
         </Button>
       </div>
-      <Button @click="clean" :disabled="isSubmitting" label="Cancella" class="h-10! w-full! rounded-lg! border! border-red-100! bg-red-50! font-bold! text-red-400! hover:bg-red-100!" />
+      <Button @click="clean" label="Cancella" class="h-10! w-full! rounded-lg! border! border-red-100! bg-red-50! font-bold! text-red-400! hover:bg-red-100!" />
     </div>
 
     <div v-if="showConfirmation" class="mt-2 rounded-lg border border-emerald-300 bg-emerald-100 p-2 text-center text-sm font-semibold text-emerald-800">
