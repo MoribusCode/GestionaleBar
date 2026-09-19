@@ -3,6 +3,7 @@ import axios from 'axios';
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import Button from 'primevue/button';
+import CashPaymentDialog from '@/components/CashPaymentDialog.vue';
 import { addedToOrder } from '@/store.js';
 import { API_BASE_URL, SOCKET_PATH, SOCKET_URL } from '@/store';
 
@@ -139,6 +140,29 @@ function terminatePosPayment() {
   }
 }
 
+const showCashDialog = ref(false);
+const cashError = ref('');
+let cashErrorTimeout = null;
+
+function openCashDialog() {
+  if (totalPrice() <= 0) {
+    cashError.value = 'Importo non valido';
+    if (cashErrorTimeout) {
+      clearTimeout(cashErrorTimeout);
+    }
+    cashErrorTimeout = setTimeout(() => {
+      cashError.value = '';
+    }, 3000);
+    return;
+  }
+  showCashDialog.value = true;
+}
+
+async function confirmCashPayment() {
+  showCashDialog.value = false;
+  await storeOrder('contanti');
+}
+
 // impostato in modo sincrono PRIMA dell'await, per chiudere la finestra in cui un doppio click
 // (es. mentre la stampante sta ancora rispondendo) farebbe partire due volte lo stesso ordine
 const isSubmitting = ref(false);
@@ -217,6 +241,9 @@ onUnmounted(() => {
   if (posErrorTimeout) {
     clearTimeout(posErrorTimeout);
   }
+  if (cashErrorTimeout) {
+    clearTimeout(cashErrorTimeout);
+  }
   terminatePosPayment();
   window.removeEventListener('beforeunload', terminatePosPayment);
   socket.disconnect();
@@ -264,8 +291,12 @@ onUnmounted(() => {
         {{ posError }}
       </div>
 
+      <div v-if="cashError" class="rounded-lg border border-red-200 bg-red-50 p-2 text-center text-sm font-semibold text-red-600">
+        {{ cashError }}
+      </div>
+
       <div class="flex gap-3">
-        <Button @click="storeOrder('contanti')" :loading="isSubmitting" :disabled="isSubmitting" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
+        <Button @click="openCashDialog" :loading="isSubmitting" :disabled="isSubmitting" class="h-20! flex-1! flex-col! gap-1! rounded-lg! border-none! bg-slate-800! font-bold! text-white! hover:bg-slate-900!">
           <i class="pi pi-money-bill text-xl!"></i>
           <span>Contanti</span>
         </Button>
@@ -280,5 +311,11 @@ onUnmounted(() => {
     <div v-if="showConfirmation" class="mt-2 rounded-lg border border-emerald-300 bg-emerald-100 p-2 text-center text-sm font-semibold text-emerald-800">
       Ordine {{ lastOrderId ? '#' + lastOrderId : '' }} inviato!
     </div>
+
+    <CashPaymentDialog
+      v-model:visible="showCashDialog"
+      :total="totalPrice()"
+      @confirm="confirmCashPayment"
+    />
   </div>
 </template>

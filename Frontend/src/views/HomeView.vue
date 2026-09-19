@@ -87,12 +87,6 @@ function formatCurrency(value) {
   }).format(value || 0);
 }
 
-function sameLocalDay(left, right) {
-  return left.getFullYear() === right.getFullYear()
-    && left.getMonth() === right.getMonth()
-    && left.getDate() === right.getDate();
-}
-
 async function fetchLiveOrders() {
   try {
     const response = await axios.get(`${API_BASE_URL}/orders`, { withCredentials: true });
@@ -107,20 +101,16 @@ async function fetchLiveOrders() {
   }
 }
 
-const todayOrders = computed(() => {
-  const now = new Date();
-
-  return liveOrders.value
-    .map((order) => ({
-      ...order,
-      parsedDate: parseOrderDate(order.createdAt)
-    }))
-    .filter((order) => order.parsedDate && sameLocalDay(order.parsedDate, now));
-});
+const todayOrders = computed(() =>liveOrders.value
+.map((order) => ({
+    ...order,
+    parsedDate: parseOrderDate(order.createdAt)
+  }))
+  .filter((order) => order.parsedDate));
 
 const chartHours = [
-  9, 10, 11, 12, 13, 14, 15, 16,
-  17, 18, 19, 20, 21, 22, 23, 0
+  5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+  17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3
 ];
 
 const hourlySeries = computed(() => {
