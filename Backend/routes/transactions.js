@@ -19,12 +19,42 @@ module.exports = function (fastify, opts, done) {
                     description,
                     receipt_name,
                     receipt_mime_type,
-                    receipt_data
-                FROM transactions
-                ORDER BY datetime(date) DESC, transaction_id DESC
+                    receipt_data,
+                    (SELECT COUNT(*) FROM transaction_items ti WHERE ti.transaction_id = t.transaction_id) AS items_count
+                FROM transactions t
+                ORDER BY datetime(t.date) DESC, t.transaction_id DESC
             `);
 
             return { transactions };
+        } catch (err) {
+            reply.code(500).send({ message: err.message });
+        }
+    });
+
+    // GET - articoli venduti nella chiusura collegata a una transazione
+    fastify.get('/transaction-items/:id', { preHandler: fastify.authorize() }, async (request, reply) => {
+        try {
+            const { id } = request.params;
+            const transaction = await dbGet(
+                `SELECT transaction_id, date, amount, description
+                 FROM transactions
+                 WHERE transaction_id = ?`,
+                [id]
+            );
+
+            if (!transaction) {
+                return reply.code(404).send({ message: 'Transazione non trovata' });
+            }
+
+            const items = await dbAll(
+                `SELECT item_name, quantity, unit_price, total_price
+                 FROM transaction_items
+                 WHERE transaction_id = ?
+                 ORDER BY item_name COLLATE NOCASE`,
+                [id]
+            );
+
+            return { transaction, items };
         } catch (err) {
             reply.code(500).send({ message: err.message });
         }
