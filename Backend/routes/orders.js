@@ -483,14 +483,35 @@ module.exports = function (fastify, opts, done) {
                     ...[...prezziFuoriCatalogo].map(([nome, prezzo]) => ({ nome, prezzo }))
                 ];
 
+                const soldItems = new Map();
+                for (const order of barOrders) {
+                    for (const item of order.items) {
+                        const quantity = Number(item.quantity) || 0;
+                        const unitPrice = Number(item.price) || 0;
+                        const existing = soldItems.get(item.name) || { quantity: 0, unitPrice, totalPrice: 0 };
+                        existing.quantity += quantity;
+                        existing.totalPrice += quantity * unitPrice;
+                        soldItems.set(item.name, existing);
+                    }
+                }
+
                 const { fileName, total: barTotal, receiptData, mimeType } = await fastify.excelExport.exportVenditeBar(prodotti, quantita, closureDate, `bar${barId}`);
 
                 if (barTotal > 0) {
-                    await dbRun(
+                    const transaction = await dbRunWithResult(
                         `INSERT INTO transactions (amount, type, description, receipt_name, receipt_mime_type, receipt_data)
                          VALUES (?, 'IN', ?, ?, ?, ?)`,
                         [barTotal, `Chiusura giornata Bar #${barId} ${dayLabel}`, fileName, mimeType, receiptData]
                     );
+
+                    for (const [itemName, item] of soldItems) {
+                        await dbRun(
+                            `INSERT INTO transaction_items
+                             (transaction_id, item_name, quantity, unit_price, total_price)
+                             VALUES (?, ?, ?, ?, ?)`,
+                            [transaction.lastID, itemName, item.quantity, item.unitPrice, item.totalPrice]
+                        );
+                    }
                 }
 
                 // riepilogo per metodo di pagamento, usato solo per il resoconto stampato

@@ -83,6 +83,14 @@ const router = createRouter({
       }
     },
     {
+      path: '/bilancio/transazione/:id/articoli',
+      name: 'transaction-items',
+      component: () => import('@/views/TransactionItemsView.vue'),
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
       path: '/postazione',
       name: 'postazione',
       component: () => import('@/views/Postazione.vue'),

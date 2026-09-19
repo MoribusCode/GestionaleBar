@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import Button from 'primevue/button';
@@ -8,6 +9,7 @@ import { useUserStore } from '@/stores/user';
 import { API_BASE_URL, SOCKET_PATH, SOCKET_URL } from '@/store';
 
 const userStore = useUserStore();
+const router = useRouter();
 
 const transactions = ref([]);
 const loading = ref(false);
@@ -495,18 +497,28 @@ onBeforeUnmount(() => {
                   {{ transaction.type === 'IN' ? '+' : '-' }}{{ formatCurrency(transaction.amount) }}
                 </td>
                 <td class="px-4 py-3">
-                  <a
-                    v-if="transaction.receipt_data"
-                    :href="transaction.receipt_data"
-                    :download="transaction.receipt_name || `scontrino_${transaction.transaction_id}`"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    <i class="pi pi-paperclip"></i>
-                    Apri
-                  </a>
-                  <span v-else class="text-xs text-slate-400">-</span>
+                  <div class="flex items-center gap-4">
+                    <a
+                      v-if="transaction.receipt_data"
+                      :href="transaction.receipt_data"
+                      :download="transaction.receipt_name || `scontrino_${transaction.transaction_id}`"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                      <i class="pi pi-paperclip"></i>
+                      Apri
+                    </a>
+                    <span v-else class="text-xs text-slate-400">-</span>
+                    <Button
+                      v-if="transaction.items_count > 0"
+                      icon="pi pi-list"
+                      label="Visualizza articoli"
+                      size="small"
+                      class="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                      @click="router.push({ name: 'transaction-items', params: { id: transaction.transaction_id } })"
+                    />
+                  </div>
                 </td>
                 <td v-if="isAdmin" class="px-4 py-3">
                   <div class="flex justify-end gap-2">

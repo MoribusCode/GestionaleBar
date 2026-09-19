@@ -76,7 +76,7 @@ db.serialize(() => {
     )
   `);
 
-  // Tabella inventartio (inventory)
+  // Tabella inventario (inventory)
   db.run(`
     CREATE TABLE IF NOT EXISTS inventory (
       item_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,6 +96,20 @@ db.serialize(() => {
       receipt_name TEXT,          -- nome file dell'allegato (es. scontrino/scritura di chiusura giornata)
       receipt_mime_type TEXT,     -- content-type dell'allegato
       receipt_data TEXT           -- allegato come data URL base64
+    )
+  `);
+
+  // Articoli venduti salvati al momento della chiusura, prima di eliminare gli ordini.
+  db.run(`
+    CREATE TABLE IF NOT EXISTS transaction_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transaction_id INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 0,
+      unit_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+      total_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+      FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE,
+      UNIQUE (transaction_id, item_name)
     )
   `);
   // Tabella bar
