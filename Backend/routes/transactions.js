@@ -105,10 +105,19 @@ module.exports = function (fastify, opts, done) {
                 return reply.code(404).send({ message: 'Nessun ordine associato a questa chiusura' });
             }
 
-            const barId = orders[0].bar_id;
             const isAdmin = request.user.role === 'admin';
-            if (!isAdmin && barId !== request.user.bar_id) {
+            const snapshotBarId = orders[0].bar_id;
+
+            if (!isAdmin && snapshotBarId !== null && snapshotBarId !== request.user.bar_id) {
                 return reply.code(403).send({ message: 'Non puoi ristampare il resoconto di un altro bar' });
+            }
+
+            // le chiusure fatte prima dell'introduzione della colonna bar_id su transaction_orders
+            // non hanno questo dato salvato: un cassiere vede comunque solo il proprio bar, quindi
+            // in quel caso si assume il suo; un admin invece non ha un bar associato univoco
+            const barId = snapshotBarId ?? (isAdmin ? null : request.user.bar_id);
+            if (barId === null) {
+                return reply.code(404).send({ message: 'Impossibile determinare il bar di questa chiusura (dati troppo vecchi)' });
             }
 
             const bar = await dbGet('SELECT printer_ip FROM bar WHERE id = ?', [barId]);
