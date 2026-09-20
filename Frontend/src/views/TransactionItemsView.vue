@@ -104,18 +104,33 @@ function matchesCategory(order) {
   });
 }
 
-// riepilogo incasso per metodo di pagamento, calcolato su tutti gli ordini della chiusura
-// (non risente dei filtri: è il totale reale della giornata, mostrato in cima alla pagina)
-const paymentTotals = computed(() => {
-  let contanti = 0, pos = 0, altro = 0;
-  orders.value.forEach((order) => {
-    const amount = Number(order.totalPrice) || 0;
-    if (order.paymentMethod === 'contanti') contanti += amount;
-    else if (order.paymentMethod === 'pos') pos += amount;
-    else altro += amount;
-  });
-  return { contanti, pos, altro, totale: contanti + pos + altro };
-});
+// un ordine può contenere più articoli diversi: se la ricerca/categoria trova corrispondenza
+// solo su alcuni, mostra (e conta nei totali) solo quelli, non l'intero ordine com'era prima,
+// che faceva comparire/contare anche articoli estranei presenti nello stesso ordine (es.
+// cercando "Coca Cola" spuntava anche lo Spritz ordinato insieme)
+function narrowOrderItems(order) {
+  let displayItems = order.items || [];
+
+  const query = filterSearch.value.trim().toLowerCase();
+  const matchesByOrderNumber = query && String(order.orderNumber ?? '').toLowerCase().includes(query);
+  if (query && !matchesByOrderNumber) {
+    const matched = displayItems.filter((item) => item.name?.toLowerCase().includes(query));
+    if (matched.length > 0) displayItems = matched;
+  }
+
+  if (filterCategory.value !== ALL_CATEGORIES) {
+    const selected = filterCategory.value.toLowerCase();
+    const matched = displayItems.filter((item) => {
+      const category = categoryByItemName.value.get(item.name);
+      if (!category) return false;
+      const normalized = category.toLowerCase();
+      return normalized === selected || normalized.startsWith(`${selected}_`);
+    });
+    if (matched.length > 0) displayItems = matched;
+  }
+
+  return displayItems;
+}
 
 // una chiusura riguarda sempre ordini già serviti: lo stato non viene salvato, la spunta
 // verde nella card è solo visiva, impostata qui senza dipendere da un valore persistito
@@ -127,9 +142,12 @@ const sortedOrders = computed(() => [...orders.value]
   }))
   .sort((left, right) => (left.parsedDate?.getTime() || 0) - (right.parsedDate?.getTime() || 0)));
 
-const filteredOrders = computed(() => sortedOrders.value.filter((order) =>
-  matchesTimeRange(order.parsedDate) && matchesSearch(order) && matchesCategory(order)
-));
+// ordini che rispettano i filtri, con gli articoli già ristretti a quelli pertinenti: da qui
+// derivano sia le card di riepilogo sia la tabella articoli sia lo storico ordini, così i filtri
+// valgono su tutta la pagina in modo coerente
+const filteredOrders = computed(() => sortedOrders.value
+  .filter((order) => matchesTimeRange(order.parsedDate) && matchesSearch(order) && matchesCategory(order))
+  .map((order) => ({ ...order, items: narrowOrderItems(order) })));
 
 // tabella/grafico articoli ricalcolati dagli ordini filtrati, così i filtri valgono su tutta la
 // pagina; le chiusure vecchie senza snapshot ordini (orders.length === 0) restano invariate
@@ -149,6 +167,24 @@ const filteredItems = computed(() => {
 });
 
 const displayedItems = computed(() => (orders.value.length ? filteredItems.value : items.value));
+
+// riepilogo incasso per metodo di pagamento: calcolato sugli articoli GIÀ FILTRATI (stesso dato
+// della tabella "Articoli venduti"), non sul totale intero dell'ordine — così se cerchi "Coca
+// Cola" queste card mostrano l'incasso reale di Coca Cola, non quello di tutto l'ordine in cui
+// magari c'era anche altro. Senza filtri attivi coincide con l'incasso reale della giornata.
+const paymentTotals = computed(() => {
+  let contanti = 0, pos = 0, altro = 0;
+  filteredOrders.value.forEach((order) => {
+    const orderItemsTotal = (order.items || []).reduce(
+      (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.price) || 0),
+      0
+    );
+    if (order.paymentMethod === 'contanti') contanti += orderItemsTotal;
+    else if (order.paymentMethod === 'pos') pos += orderItemsTotal;
+    else altro += orderItemsTotal;
+  });
+  return { contanti, pos, altro, totale: contanti + pos + altro };
+});
 
 const totalQuantity = computed(() => displayedItems.value.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
 const totalItems = computed(() => displayedItems.value.reduce((sum, item) => sum + Number(item.total_price || 0), 0));
