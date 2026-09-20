@@ -510,34 +510,61 @@ module.exports = function (fastify, opts, done) {
                     }
                 }
 
-                const { fileName, total: barTotal, receiptData, mimeType } = await fastify.excelExport.exportVenditeBar(prodotti, quantita, closureDate, `bar${barId}`);
+                const { fileName, receiptData, mimeType } = await fastify.excelExport.exportVenditeBar(prodotti, quantita, closureDate, `bar${barId}`);
 
-                if (barTotal > 0) {
-                    const transaction = await dbRunWithResult(
-                        `INSERT INTO transactions (amount, type, description, receipt_name, receipt_mime_type, receipt_data)
-                         VALUES (?, 'IN', ?, ?, ?, ?)`,
-                        [barTotal, `Chiusura giornata Bar #${barId} ${dayLabel}`, fileName, mimeType, receiptData]
-                    );
+                // totale reale incassato (somma di quanto addebitato in ogni ordine), NON il totale del
+                // registro Excel: quello è ricalcolato sui prezzi ATTUALI di catalogo e si disallinea dal
+                // vero incasso se un prezzo cambia tra la vendita e la chiusura, o se un articolo esce dal
+                // catalogo/categoria attiva del bar nel frattempo
+                const barTotal = barOrders.reduce((sum, order) => sum + (Number(order.totalPrice) || 0), 0);
 
-                    for (const [itemName, item] of soldItems) {
+                // tutte le scritture di questa chiusura in un'unica transazione, con insert bulk
+                // (una query multi-riga invece di una insert awaited per ogni articolo/ordine):
+                // prima ogni singola query faceva il suo giro di sincronizzazione su disco, che con
+                // tanti ordini/articoli mette SQLite sotto stress e rallenta parecchio la chiusura
+                await dbRun('BEGIN IMMEDIATE');
+                try {
+                    if (barTotal > 0) {
+                        const transaction = await dbRunWithResult(
+                            `INSERT INTO transactions (amount, type, description, receipt_name, receipt_mime_type, receipt_data)
+                             VALUES (?, 'IN', ?, ?, ?, ?)`,
+                            [barTotal, `Chiusura giornata Bar #${barId} ${dayLabel}`, fileName, mimeType, receiptData]
+                        );
+
+                        const itemEntries = [...soldItems];
+                        if (itemEntries.length > 0) {
+                            const itemPlaceholders = itemEntries.map(() => '(?, ?, ?, ?, ?)').join(', ');
+                            const itemParams = itemEntries.flatMap(([itemName, item]) =>
+                                [transaction.lastID, itemName, item.quantity, item.unitPrice, item.totalPrice]
+                            );
+                            await dbRun(
+                                `INSERT INTO transaction_items (transaction_id, item_name, quantity, unit_price, total_price) VALUES ${itemPlaceholders}`,
+                                itemParams
+                            );
+                        }
+
+                        // snapshot dei singoli ordini (con orario), per ricostruire lo storico
+                        // ordini e l'andamento orario di quella giornata dopo che vengono cancellati
+                        const orderPlaceholders = barOrders.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+                        const orderParams = barOrders.flatMap((order) => [
+                            transaction.lastID, order.orderNumber, order.createdAt, order.totalPrice, order.paymentMethod, JSON.stringify(order.items)
+                        ]);
                         await dbRun(
-                            `INSERT INTO transaction_items
-                             (transaction_id, item_name, quantity, unit_price, total_price)
-                             VALUES (?, ?, ?, ?, ?)`,
-                            [transaction.lastID, itemName, item.quantity, item.unitPrice, item.totalPrice]
+                            `INSERT INTO transaction_orders (transaction_id, order_number, created_at, total_price, payment_method, items) VALUES ${orderPlaceholders}`,
+                            orderParams
                         );
                     }
 
-                    // snapshot dei singoli ordini (con orario), per ricostruire lo storico
-                    // ordini e l'andamento orario di quella giornata dopo che vengono cancellati
-                    for (const order of barOrders) {
-                        await dbRun(
-                            `INSERT INTO transaction_orders
-                             (transaction_id, order_number, created_at, total_price, payment_method, items)
-                             VALUES (?, ?, ?, ?, ?, ?)`,
-                            [transaction.lastID, order.orderNumber, order.createdAt, order.totalPrice, order.paymentMethod, JSON.stringify(order.items)]
-                        );
-                    }
+                    await dbRun('DELETE FROM orders WHERE bar_id = ?', [barId]);
+
+                    // il numero ordine sullo scontrino riparte da 1 ogni giorno, altrimenti cresce
+                    // all'infinito e perde di senso quanto l'id del database
+                    await dbRun('UPDATE bar SET order_number = 0 WHERE id = ?', [barId]);
+
+                    await dbRun('COMMIT');
+                } catch (err) {
+                    await dbRun('ROLLBACK');
+                    throw err;
                 }
 
                 // riepilogo per metodo di pagamento, usato solo per il resoconto stampato
@@ -549,6 +576,8 @@ module.exports = function (fastify, opts, done) {
                     else altro += amount;
                 }
 
+                // la stampa resta fuori dalla transazione: è I/O lento (rete/seriale, con un suo
+                // timeout se la stampante non risponde) e non deve tenere bloccato il DB nel frattempo
                 try {
                     await fastify.printer.stampaResocontoChiusura({
                         dayLabel,
@@ -562,12 +591,6 @@ module.exports = function (fastify, opts, done) {
                 } catch (err) {
                     console.error("Errore durante la stampa del resoconto di chiusura:", err.message);
                 }
-
-                await dbRun('DELETE FROM orders WHERE bar_id = ?', [barId]);
-
-                // il numero ordine sullo scontrino riparte da 1 ogni giorno, altrimenti cresce
-                // all'infinito e perde di senso quanto l'id del database
-                await dbRun('UPDATE bar SET order_number = 0 WHERE id = ?', [barId]);
 
                 closedBars.push({ barId, total: barTotal, fileName, orderCount: barOrders.length });
             }
