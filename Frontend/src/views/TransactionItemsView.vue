@@ -405,22 +405,20 @@ function formatPaymentMethod(method) {
   return labels[method?.toLowerCase()] || method || '-';
 }
 
-// ristampa da uno snapshot di chiusura: l'ordine originale non esiste più nelle tabelle
-// orders/order_items (cancellate alla chiusura), quindi usa l'id della riga transaction_orders
-const reprintingId = ref(null);
+// ristampa il resoconto di chiusura dell'intera giornata (non i singoli ordini)
+const reprintingSummary = ref(false);
 
-async function reprintOrder(id, event) {
-  event?.stopPropagation();
-  if (reprintingId.value) return;
+async function reprintSummary() {
+  if (reprintingSummary.value) return;
 
-  reprintingId.value = id;
+  reprintingSummary.value = true;
   try {
-    await axios.post(`${API_BASE_URL}/transaction-orders/${id}/reprint`, {}, { withCredentials: true });
+    await axios.post(`${API_BASE_URL}/transactions/${route.params.id}/reprint-summary`, {}, { withCredentials: true });
   } catch (e) {
-    console.error(`Errore durante la ristampa dell'ordine ${id}:`, e);
-    alert(e.response?.data?.message || 'Errore durante la ristampa dello scontrino');
+    console.error('Errore durante la ristampa del resoconto:', e);
+    alert(e.response?.data?.message || 'Errore durante la ristampa del resoconto');
   } finally {
-    reprintingId.value = null;
+    reprintingSummary.value = false;
   }
 }
 
@@ -461,10 +459,22 @@ onMounted(() => {
       </div>
 
       <section class="rounded-3xl border-2 border-slate-200/70 bg-white/85 p-6 backdrop-blur-sm sm:p-8">
-        <h1 class="text-2xl font-semibold text-slate-900">Riepilogo della giornata</h1>
-        <p v-if="transaction" class="mt-2 text-sm text-slate-500">
-          {{ transaction.description }} · {{ formatDate(transaction.date) }}
-        </p>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-semibold text-slate-900">Riepilogo della giornata</h1>
+            <p v-if="transaction" class="mt-2 text-sm text-slate-500">
+              {{ transaction.description }} · {{ formatDate(transaction.date) }}
+            </p>
+          </div>
+          <Button
+            icon="pi pi-print"
+            label="Ristampa resoconto"
+            :loading="reprintingSummary"
+            outlined
+            class="shrink-0 rounded-xl"
+            @click="reprintSummary"
+          />
+        </div>
 
         <p v-if="loading" class="mt-8 text-center text-sm text-slate-500">Caricamento...</p>
         <p v-else-if="errorMessage" class="mt-8 text-center text-sm font-medium text-red-600">{{ errorMessage }}</p>
@@ -598,19 +608,7 @@ onMounted(() => {
                   :payment-method="formatPaymentMethod(order.paymentMethod)"
                   :items="order.items"
                   :total="order.totalPrice"
-                >
-                  <template #actions>
-                    <Button
-                      icon="pi pi-print"
-                      :loading="reprintingId === order.id"
-                      text
-                      rounded
-                      class="rounded-xl text-slate-600 transition-colors hover:bg-slate-200/70"
-                      v-tooltip="'Ristampa scontrino'"
-                      @click="reprintOrder(order.id, $event)"
-                    />
-                  </template>
-                </OrderCard>
+                />
               </div>
             </template>
           </template>

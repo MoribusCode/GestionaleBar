@@ -76,77 +76,77 @@ module.exports = function (fastify, opts, done) {
         }
     });
 
-    // POST - ristampa lo scontrino di un ordine di una chiusura passata (lo storico ordini in
-    // "Visualizza giornata"): l'ordine originale non esiste più nelle tabelle orders/order_items
-    // (cancellate alla chiusura), quindi si ricostruisce dallo snapshot in transaction_orders
-    fastify.post('/transaction-orders/:id/reprint', { preHandler: fastify.authorize([]) }, async (request, reply) => {
+    // POST - ristampa il resoconto di chiusura di una giornata già chiusa (in "Visualizza
+    // giornata"): gli ordini originali non esistono più (cancellati alla chiusura), quindi si
+    // ricostruisce il riepilogo dagli snapshot salvati in transaction_items/transaction_orders
+    fastify.post('/transactions/:id/reprint-summary', { preHandler: fastify.authorize([]) }, async (request, reply) => {
         try {
             const { id } = request.params;
 
-            const order = await dbGet(
-                `SELECT id, order_number, total_price, payment_method, items, bar_id
-                 FROM transaction_orders
-                 WHERE id = ?`,
+            const transaction = await dbGet(
+                `SELECT transaction_id, date, amount
+                 FROM transactions
+                 WHERE transaction_id = ?`,
                 [id]
             );
 
-            if (!order) {
-                return reply.code(404).send({ message: 'Ordine non trovato' });
+            if (!transaction) {
+                return reply.code(404).send({ message: 'Transazione non trovata' });
             }
 
+            const orders = await dbAll(
+                `SELECT total_price, payment_method, bar_id
+                 FROM transaction_orders
+                 WHERE transaction_id = ?`,
+                [id]
+            );
+
+            if (orders.length === 0) {
+                return reply.code(404).send({ message: 'Nessun ordine associato a questa chiusura' });
+            }
+
+            const barId = orders[0].bar_id;
             const isAdmin = request.user.role === 'admin';
-            if (!isAdmin && order.bar_id !== request.user.bar_id) {
-                return reply.code(403).send({ message: 'Non puoi ristampare un ordine di un altro bar' });
+            if (!isAdmin && barId !== request.user.bar_id) {
+                return reply.code(403).send({ message: 'Non puoi ristampare il resoconto di un altro bar' });
             }
 
-            const bar = await dbGet('SELECT printer_ip, print_tags FROM bar WHERE id = ?', [order.bar_id]);
+            const bar = await dbGet('SELECT printer_ip FROM bar WHERE id = ?', [barId]);
             if (!bar) {
                 return reply.code(404).send({ message: 'Bar non trovato' });
             }
 
-            const categories = await dbAll('SELECT name, prefix FROM categories');
-            const prefixByCategory = {};
-            for (const category of categories) {
-                prefixByCategory[category.name] = category.prefix || '';
+            const items = await dbAll(
+                `SELECT item_name, quantity, total_price
+                 FROM transaction_items
+                 WHERE transaction_id = ?
+                 ORDER BY item_name COLLATE NOCASE`,
+                [id]
+            );
+
+            let contanti = 0, pos = 0, altro = 0;
+            for (const order of orders) {
+                const amount = Number(order.total_price) || 0;
+                if (order.payment_method === 'contanti') contanti += amount;
+                else if (order.payment_method === 'pos') pos += amount;
+                else altro += amount;
             }
 
-            const items = JSON.parse(order.items);
+            const dayLabel = new Date(transaction.date).toLocaleDateString('it-IT');
 
-            // lo snapshot salva solo nome/quantità/prezzo (non la categoria di allora): per
-            // raggruppare comunque i tagliandini postazione si usa la categoria ATTUALE
-            // dell'articolo nel catalogo, un'approssimazione ma migliore di nessun raggruppamento
-            const catalogItems = items.length > 0
-                ? await dbAll(
-                    `SELECT name, category FROM items WHERE name IN (${items.map(() => '?').join(', ')})`,
-                    items.map(item => item.name)
-                )
-                : [];
-            const categoryByItemName = {};
-            for (const catalogItem of catalogItems) {
-                categoryByItemName[catalogItem.name] = catalogItem.category;
-            }
+            await fastify.printer.stampaResocontoChiusura({
+                dayLabel,
+                orderCount: orders.length,
+                contanti,
+                pos,
+                altro,
+                totale: Number(transaction.amount) || 0,
+                items: items.map(item => ({ name: item.item_name, quantity: item.quantity, totalPrice: item.total_price }))
+            }, bar.printer_ip);
 
-            const orderData = {
-                id: order.id,
-                order_number: order.order_number,
-                items: items.map(item => ({
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: Number(item.price || 0),
-                    category: categoryByItemName[item.name],
-                    prefix: prefixByCategory[categoryByItemName[item.name]] || ''
-                })),
-                note: '',
-                totalPrice: order.total_price,
-                paymentMethod: order.payment_method,
-                printTags: !!bar.print_tags
-            };
-
-            await fastify.printer.stampaScontrino(orderData, bar.printer_ip);
-
-            return reply.send({ message: 'Scontrino ristampato con successo' });
+            return reply.send({ message: 'Resoconto ristampato con successo' });
         } catch (err) {
-            console.error('Errore durante la ristampa dello scontrino:', err.message);
+            console.error('Errore durante la ristampa del resoconto:', err.message);
             return reply.code(500).send({ message: err.message });
         }
     });
