@@ -100,7 +100,7 @@ module.exports = function (fastify, opts, done) {
     }
 
     // GET all orders
-    fastify.get("/orders", async (request, reply) => {
+    fastify.get("/orders", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         try {
             // admin: vede tutti i bar di default, oppure filtra per uno specifico bar_id in query;
             // gli altri ruoli vedono sempre e solo il proprio bar.
@@ -146,7 +146,7 @@ module.exports = function (fastify, opts, done) {
     });
 
     // GET all pending orders (solo quelli non ancora completati)
-    fastify.get("/orders/pending", async (request, reply) => {
+    fastify.get("/orders/pending", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         try {
             const barId = request.user.bar_id;
             const rows = await dbAll(`
@@ -190,7 +190,7 @@ module.exports = function (fastify, opts, done) {
     });
 
     // POST a new order
-    fastify.post("/orders", async (request, reply) => {
+    fastify.post("/orders", { preHandler: fastify.authorize([]) }, async (request, reply) => {
 
         if (!request.body.order || !Array.isArray(request.body.order) || request.body.order.length === 0) {
             return reply.status(400).send({ message: "Payload not correct" });
@@ -300,7 +300,7 @@ module.exports = function (fastify, opts, done) {
     });
 
     // POST - ristampa lo scontrino di un ordine già esistente (dallo Storico)
-    fastify.post("/orders/:id/reprint", async (request, reply) => {
+    fastify.post("/orders/:id/reprint", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         const { id } = request.params;
 
         try {
@@ -362,7 +362,7 @@ module.exports = function (fastify, opts, done) {
     });
 
     // DELETE an order by ID
-    fastify.delete("/delete-order/:id", async (request, reply) => {
+    fastify.delete("/delete-order/:id", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         const { id } = request.params;
 
         try {
@@ -377,7 +377,7 @@ module.exports = function (fastify, opts, done) {
     });
 
     // PUT (Mark order as completed)
-    fastify.put("/orders/:orderId/category/:category/close", async (request, reply) => {
+    fastify.put("/orders/:orderId/category/:category/close", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         const { orderId, category } = request.params;
 
         try {
@@ -445,7 +445,7 @@ module.exports = function (fastify, opts, done) {
 
     // PUT - segna un intero ordine come completato (override manuale dallo Storico, a prescindere
     // dalla categoria/postazione)
-    fastify.put("/orders/:orderId/complete", async (request, reply) => {
+    fastify.put("/orders/:orderId/complete", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         const { orderId } = request.params;
 
         try {
@@ -471,7 +471,7 @@ module.exports = function (fastify, opts, done) {
 
     // POST - Chiudi giornata: chiude TUTTI i bar, creando per ciascuno una transazione
     // e un file Excel separato con i suoi ordini, poi svuota ordini e order_items.
-    fastify.post("/orders/close-day", async (request, reply) => {
+    fastify.post("/orders/close-day", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         try {
             const isAdmin = request.user.role === 'admin';
 
@@ -544,13 +544,14 @@ module.exports = function (fastify, opts, done) {
                         }
 
                         // snapshot dei singoli ordini (con orario), per ricostruire lo storico
-                        // ordini e l'andamento orario di quella giornata dopo che vengono cancellati
-                        const orderPlaceholders = barOrders.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+                        // ordini e l'andamento orario di quella giornata dopo che vengono cancellati.
+                        // bar_id serve per sapere su quale stampante ristampare in seguito
+                        const orderPlaceholders = barOrders.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
                         const orderParams = barOrders.flatMap((order) => [
-                            transaction.lastID, order.orderNumber, order.createdAt, order.totalPrice, order.paymentMethod, JSON.stringify(order.items)
+                            transaction.lastID, order.orderNumber, order.createdAt, order.totalPrice, order.paymentMethod, JSON.stringify(order.items), barId
                         ]);
                         await dbRun(
-                            `INSERT INTO transaction_orders (transaction_id, order_number, created_at, total_price, payment_method, items) VALUES ${orderPlaceholders}`,
+                            `INSERT INTO transaction_orders (transaction_id, order_number, created_at, total_price, payment_method, items, bar_id) VALUES ${orderPlaceholders}`,
                             orderParams
                         );
                     }
@@ -614,7 +615,7 @@ module.exports = function (fastify, opts, done) {
     // GET - esporta il registro "Vendite Bar", lo stesso formato usato dalla chiusura giornata,
     // per gli ordini attualmente aperti (senza chiuderli). admin: bar_id opzionale in query
     // (se assente, un foglio per ogni bar con ordini aperti); altri ruoli: sempre il proprio bar.
-    fastify.get("/export-excel", async (request, reply) => {
+    fastify.get("/export-excel", { preHandler: fastify.authorize([]) }, async (request, reply) => {
         try {
             const isAdmin = request.user.role === 'admin';
             let barIds;

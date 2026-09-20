@@ -55,13 +55,14 @@ module.exports = function (fastify, opts, done) {
             );
 
             const orderRows = await dbAll(
-                `SELECT order_number, created_at, total_price, payment_method, items
+                `SELECT id, order_number, created_at, total_price, payment_method, items
                  FROM transaction_orders
                  WHERE transaction_id = ?
                  ORDER BY datetime(created_at) ASC`,
                 [id]
             );
             const orders = orderRows.map(row => ({
+                id: row.id,
                 orderNumber: row.order_number,
                 createdAt: row.created_at,
                 totalPrice: row.total_price,
@@ -72,6 +73,81 @@ module.exports = function (fastify, opts, done) {
             return { transaction, items, orders };
         } catch (err) {
             reply.code(500).send({ message: err.message });
+        }
+    });
+
+    // POST - ristampa lo scontrino di un ordine di una chiusura passata (lo storico ordini in
+    // "Visualizza giornata"): l'ordine originale non esiste più nelle tabelle orders/order_items
+    // (cancellate alla chiusura), quindi si ricostruisce dallo snapshot in transaction_orders
+    fastify.post('/transaction-orders/:id/reprint', { preHandler: fastify.authorize([]) }, async (request, reply) => {
+        try {
+            const { id } = request.params;
+
+            const order = await dbGet(
+                `SELECT id, order_number, total_price, payment_method, items, bar_id
+                 FROM transaction_orders
+                 WHERE id = ?`,
+                [id]
+            );
+
+            if (!order) {
+                return reply.code(404).send({ message: 'Ordine non trovato' });
+            }
+
+            const isAdmin = request.user.role === 'admin';
+            if (!isAdmin && order.bar_id !== request.user.bar_id) {
+                return reply.code(403).send({ message: 'Non puoi ristampare un ordine di un altro bar' });
+            }
+
+            const bar = await dbGet('SELECT printer_ip, print_tags FROM bar WHERE id = ?', [order.bar_id]);
+            if (!bar) {
+                return reply.code(404).send({ message: 'Bar non trovato' });
+            }
+
+            const categories = await dbAll('SELECT name, prefix FROM categories');
+            const prefixByCategory = {};
+            for (const category of categories) {
+                prefixByCategory[category.name] = category.prefix || '';
+            }
+
+            const items = JSON.parse(order.items);
+
+            // lo snapshot salva solo nome/quantità/prezzo (non la categoria di allora): per
+            // raggruppare comunque i tagliandini postazione si usa la categoria ATTUALE
+            // dell'articolo nel catalogo, un'approssimazione ma migliore di nessun raggruppamento
+            const catalogItems = items.length > 0
+                ? await dbAll(
+                    `SELECT name, category FROM items WHERE name IN (${items.map(() => '?').join(', ')})`,
+                    items.map(item => item.name)
+                )
+                : [];
+            const categoryByItemName = {};
+            for (const catalogItem of catalogItems) {
+                categoryByItemName[catalogItem.name] = catalogItem.category;
+            }
+
+            const orderData = {
+                id: order.id,
+                order_number: order.order_number,
+                items: items.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: Number(item.price || 0),
+                    category: categoryByItemName[item.name],
+                    prefix: prefixByCategory[categoryByItemName[item.name]] || ''
+                })),
+                note: '',
+                totalPrice: order.total_price,
+                paymentMethod: order.payment_method,
+                printTags: !!bar.print_tags
+            };
+
+            await fastify.printer.stampaScontrino(orderData, bar.printer_ip);
+
+            return reply.send({ message: 'Scontrino ristampato con successo' });
+        } catch (err) {
+            console.error('Errore durante la ristampa dello scontrino:', err.message);
+            return reply.code(500).send({ message: err.message });
         }
     });
 

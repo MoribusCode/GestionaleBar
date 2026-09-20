@@ -405,6 +405,25 @@ function formatPaymentMethod(method) {
   return labels[method?.toLowerCase()] || method || '-';
 }
 
+// ristampa da uno snapshot di chiusura: l'ordine originale non esiste più nelle tabelle
+// orders/order_items (cancellate alla chiusura), quindi usa l'id della riga transaction_orders
+const reprintingId = ref(null);
+
+async function reprintOrder(id, event) {
+  event?.stopPropagation();
+  if (reprintingId.value) return;
+
+  reprintingId.value = id;
+  try {
+    await axios.post(`${API_BASE_URL}/transaction-orders/${id}/reprint`, {}, { withCredentials: true });
+  } catch (e) {
+    console.error(`Errore durante la ristampa dell'ordine ${id}:`, e);
+    alert(e.response?.data?.message || 'Errore durante la ristampa dello scontrino');
+  } finally {
+    reprintingId.value = null;
+  }
+}
+
 async function fetchItems() {
   try {
     const response = await axios.get(`${API_BASE_URL}/transaction-items/${route.params.id}`, { withCredentials: true });
@@ -572,14 +591,26 @@ onMounted(() => {
               <h2 class="mt-8 text-base font-semibold text-slate-900">Storico ordini della serata</h2>
               <div class="mt-3 flex flex-col items-center gap-3">
                 <OrderCard
-                  v-for="(order, index) in filteredOrders"
-                  :key="index"
+                  v-for="order in filteredOrders"
+                  :key="order.id"
                   :order-number="order.orderNumber ?? '-'"
                   :time="formatTime(order.parsedDate)"
                   :payment-method="formatPaymentMethod(order.paymentMethod)"
                   :items="order.items"
                   :total="order.totalPrice"
-                />
+                >
+                  <template #actions>
+                    <Button
+                      icon="pi pi-print"
+                      :loading="reprintingId === order.id"
+                      text
+                      rounded
+                      class="rounded-xl text-slate-600 transition-colors hover:bg-slate-200/70"
+                      v-tooltip="'Ristampa scontrino'"
+                      @click="reprintOrder(order.id, $event)"
+                    />
+                  </template>
+                </OrderCard>
               </div>
             </template>
           </template>

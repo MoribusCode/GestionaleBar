@@ -348,6 +348,20 @@ db.serialize(() => {
       }
     });
   });
+
+  // bar_id su transaction_orders: serve a sapere su quale stampante ristampare uno scontrino
+  // di una chiusura passata, dato che l'ordine originale (con il suo bar_id) è già stato cancellato
+  db.all('PRAGMA table_info(transaction_orders)', (err, columns) => {
+    if (err) {
+      console.error('Errore lettura schema transaction_orders:', err.message);
+      return;
+    }
+
+    const existingColumns = new Set((columns || []).map((column) => column.name));
+    if (!existingColumns.has('bar_id')) {
+      db.run('ALTER TABLE transaction_orders ADD COLUMN bar_id INTEGER');
+    }
+  });
 });
 
 module.exports = db;

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import EyeIcon from '@primevue/icons/eye'
@@ -12,11 +12,15 @@ import logoUrl from '@/assets/images/logo.png'
 
 const userStore = useUserStore()
 const router = useRouter()
+const route = useRoute()
 
 const username = ref('')
 const password = ref('')
 const error = ref('')
 const loading = computed(() => userStore.loading)
+const sessionExpiredMessage = computed(() =>
+  route.query.expired ? 'Sessione scaduta per inattività: accedi di nuovo.' : ''
+)
 
 async function handleLogin() {
     error.value = ''
@@ -95,6 +99,10 @@ async function handleLogin() {
                                 </template>
                             </Password>
                         </div>
+
+                        <p v-if="sessionExpiredMessage && !error" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            {{ sessionExpiredMessage }}
+                        </p>
 
                         <p v-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                             {{ error }}

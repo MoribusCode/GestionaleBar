@@ -1,10 +1,12 @@
 <script setup>
-import { ref, provide, computed } from 'vue';
+import { ref, provide, computed, onBeforeUnmount, watch } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 import Navbar from '@/components/Navbar.vue';
+import { useUserStore } from '@/stores/user';
 
 
 const route = useRoute();
+const userStore = useUserStore();
 
 /*
 const isSidebarCollapsed = ref(false);
@@ -13,6 +15,37 @@ provide('sidebarState', isSidebarCollapsed);
 
 const showMenubar = computed(() => route.name !== 'login');
 
+// authguard: sa esattamente quando scade il token (claim "exp" del JWT, letto da login/check)
+// e programma un timer locale su quell'istante preciso, invece di riinterrogare il backend a
+// intervalli — zero chiamate di rete finché la sessione non scade davvero. Senza questo, una
+// cassa lasciata aperta e ferma per ore (nessuna navigazione, nessuna chiamata) non si
+// accorgeva mai che il token era scaduto finché non si provava a fare qualcosa
+let sessionTimeout = null;
+
+watch(() => userStore.sessionExpiresAt, (expiresAt) => {
+  if (sessionTimeout) {
+    clearTimeout(sessionTimeout);
+    sessionTimeout = null;
+  }
+
+  if (!expiresAt) return;
+
+  const delay = expiresAt - Date.now();
+  if (delay <= 0) {
+    userStore.handleSessionExpired();
+    return;
+  }
+
+  sessionTimeout = setTimeout(() => {
+    userStore.handleSessionExpired();
+  }, delay);
+}, { immediate: true });
+
+onBeforeUnmount(() => {
+  if (sessionTimeout) {
+    clearTimeout(sessionTimeout);
+  }
+});
 </script>
 
 <template>

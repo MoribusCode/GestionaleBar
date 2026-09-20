@@ -80,13 +80,18 @@ module.exports = function (fastify, opts, done) {
                 sameSite: 'Strict'
             });
 
+            // "exp" del JWT (secondi epoch) in ms: il frontend lo usa per sapere in anticipo
+            // quando scadrà la sessione, con un timer locale, invece di ripetere /check a intervalli
+            const { exp } = fastify.jwt.decode(token);
+
             return reply.send({
                 message: "Login successful",
                 user: {
                     username: user.username,
                     role: user.role,
                     categories
-                }
+                },
+                expiresAt: exp * 1000
             });
 
         } catch (err) {
@@ -125,20 +130,22 @@ module.exports = function (fastify, opts, done) {
         }
     });
 
-    // Check endpoint
+    // Check endpoint: risponde sempre in modo esplicito, altrimenti senza token/con token
+    // scaduto la richiesta cadeva nel vuoto (nessun reply.send) e il frontend non si accorgeva
+    // che la sessione non era più valida
     fastify.get('/check', async (request, reply) => {
-        try {
-            if (request.user) {
-                return reply.send({
-                    authenticated: true,
-                    user: request.user
-                });
-            }
-
-        } catch (err) {
-            console.error("Check error:", err.message);
-            return reply.status(401).send({ authenticated: false });
+        if (request.user) {
+            // "exp" fa già parte del payload standard del JWT decodificato: stesso dato
+            // restituito dal login, così il frontend può riallineare il suo timer locale
+            // (es. dopo un refresh della pagina, quando lo stato in memoria è perso)
+            return reply.send({
+                authenticated: true,
+                user: request.user,
+                expiresAt: request.user.exp * 1000
+            });
         }
+
+        return reply.status(401).send({ authenticated: false });
     });
 
     async function getUser(username) {
