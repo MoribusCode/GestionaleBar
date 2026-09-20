@@ -47,8 +47,10 @@ module.exports = function (fastify, opts, done) {
         const rows = await dbAll(`
         SELECT
             o.order_id as id,
+            o.order_number as orderNumber,
             o.total_price as totalPrice,
             o.payment_method as paymentMethod,
+            o.created_at as createdAt,
             json_group_array(
                 json_object('name', oi.item_name, 'quantity', oi.quantity, 'price', oi.price)
             ) as items
@@ -62,8 +64,10 @@ module.exports = function (fastify, opts, done) {
 
         const barOrders = rows.map(row => ({
             id: row.id,
+            orderNumber: row.orderNumber,
             totalPrice: row.totalPrice,
             paymentMethod: row.paymentMethod,
+            createdAt: row.createdAt,
             items: JSON.parse(row.items)
         }));
 
@@ -523,6 +527,17 @@ module.exports = function (fastify, opts, done) {
                             [transaction.lastID, itemName, item.quantity, item.unitPrice, item.totalPrice]
                         );
                     }
+
+                    // snapshot dei singoli ordini (con orario), per ricostruire lo storico
+                    // ordini e l'andamento orario di quella giornata dopo che vengono cancellati
+                    for (const order of barOrders) {
+                        await dbRun(
+                            `INSERT INTO transaction_orders
+                             (transaction_id, order_number, created_at, total_price, payment_method, items)
+                             VALUES (?, ?, ?, ?, ?, ?)`,
+                            [transaction.lastID, order.orderNumber, order.createdAt, order.totalPrice, order.paymentMethod, JSON.stringify(order.items)]
+                        );
+                    }
                 }
 
                 // riepilogo per metodo di pagamento, usato solo per il resoconto stampato
@@ -541,7 +556,8 @@ module.exports = function (fastify, opts, done) {
                         contanti,
                         pos: posAmount,
                         altro,
-                        totale: contanti + posAmount + altro
+                        totale: contanti + posAmount + altro,
+                        items: [...soldItems].map(([name, item]) => ({ name, quantity: item.quantity, totalPrice: item.totalPrice }))
                     }, bar.printer_ip);
                 } catch (err) {
                     console.error("Errore durante la stampa del resoconto di chiusura:", err.message);

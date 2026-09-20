@@ -513,7 +513,7 @@ onBeforeUnmount(() => {
                     <Button
                       v-if="transaction.items_count > 0"
                       icon="pi pi-list"
-                      label="Visualizza articoli"
+                      label="Visualizza giornata"
                       size="small"
                       class="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
                       @click="router.push({ name: 'transaction-items', params: { id: transaction.transaction_id } })"

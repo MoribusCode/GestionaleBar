@@ -2,12 +2,11 @@
 import axios from 'axios';
 import { computed, onMounted, ref } from 'vue';
 import { saveAs } from 'file-saver';
-import Card from 'primevue/card';
 import Button from 'primevue/button';
-import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
 import Dropdown from 'primevue/dropdown';
 import ToggleSwitch from 'primevue/toggleswitch';
+import OrderCard from '@/components/OrderCard.vue';
 import { API_BASE_URL } from '@/store';
 import { useUserStore } from '@/stores/user';
 
@@ -15,7 +14,6 @@ const userStore = useUserStore();
 const isAdmin = computed(() => userStore.user?.role === 'admin');
 
 let orders = ref([]);
-const shown = ref(null);
 
 const ALL_BARS = 'all'; // PrimeVue Dropdown tratta null/'' come "nessuna selezione": serve un valore non vuoto
 const bars = ref([]);
@@ -82,9 +80,6 @@ async function proceedDeleteOrder() {
     const res = await axios.delete(`${API_BASE_URL}/delete-order/${id}`);
     if (res.status === 200) {
       orders.value = orders.value.filter(order => order.id !== id);
-      if (shown.value === id) {
-        shown.value = null; // Collapse if the deleted order was expanded
-      }
     }
   } catch (e) {
     console.error(`Error deleting order ${id}:`, e);
@@ -97,10 +92,6 @@ async function proceedDeleteOrder() {
 
 function onBarFilterChange() {
   getOrders();
-}
-
-function toggleOrder(id) {
-  shown.value = shown.value === id ? null : id;
 }
 
 const reprintingId = ref(null);
@@ -225,7 +216,6 @@ async function proceedCloseDay() {
 
     if (res.status === 200) {
       orders.value = [];
-      shown.value = null;
       console.log("Giornata chiusa con successo!", res.data);
     }
   } catch (e) {
@@ -262,74 +252,44 @@ async function proceedCloseDay() {
     </div>
 
     <div class="flex flex-col items-center gap-3">
-      <Card v-for="order in orders" :key="order.id" class="w-full max-w-2xl rounded-2xl border-2 border-slate-200/70 bg-white/85 backdrop-blur-sm">
-        <template #content>
-          <div class="flex cursor-pointer items-center justify-between gap-3" @click="toggleOrder(order.id)">
-            <div class="flex flex-wrap items-center gap-2">
-              <strong class="text-lg text-zinc-900">Ordine #{{ order.orderNumber }}</strong>
-              <Tag
-                :value="order.status"
-                :severity="order.status === 'completato' ? 'success' : order.status === 'parziale' ? 'warn' : 'info'"
-                class="capitalize px-3 py-1"
-              />
-            </div>
-            <div class="flex items-center gap-1">
-              <Button
-                v-if="order.status !== 'completato'"
-                icon="pi pi-check"
-                :loading="completingId === order.id"
-                text
-                rounded
-                class="rounded-xl text-emerald-600 transition-colors hover:bg-emerald-100"
-                v-tooltip="'Completa ordine'"
-                @click="completeOrder(order.id, $event)"
-              />
-              <Button
-                icon="pi pi-print"
-                :loading="reprintingId === order.id"
-                text
-                rounded
-                class="rounded-xl text-slate-600 transition-colors hover:bg-slate-200/70"
-                v-tooltip="'Ristampa scontrino'"
-                @click="reprintOrder(order.id, $event)"
-              />
-              <Button
-                icon="pi pi-trash"
-                severity="danger"
-                text
-                rounded
-                class="rounded-xl transition-colors hover:bg-red-100"
-                @click="confirmDeleteOrder(order, $event)"
-              />
-            </div>
-          </div>
-
-          <div v-if="shown === order.id" class="mt-3 border-t border-zinc-200 pt-3">
-            <ul class="grid grid-cols-1 gap-2 md:grid-cols-2">
-              <li
-                v-for="(item, index) in order.items"
-                :key="index"
-                class="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2"
-              >
-                <span class="flex items-center gap-2 text-sm font-medium text-zinc-800">
-                  <i
-                    v-if="item.status === 'completato'"
-                    class="pi pi-check-circle text-green-600"
-                    v-tooltip="'Completato'"
-                  ></i>
-                  <span v-else class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400" v-tooltip="'In attesa'"></span>
-                  {{ item.name }}
-                </span>
-                <span class="text-sm font-semibold text-zinc-700">x{{ item.quantity }}</span>
-              </li>
-            </ul>
-
-            <div class="mt-3 text-right text-lg font-bold text-zinc-900">
-              Totale: {{ order.totalPrice }} €
-            </div>
-          </div>
-        </template>
-      </Card>
+      <div v-for="order in orders" :key="order.id" class="w-full max-w-2xl">
+        <OrderCard
+          :order-number="order.orderNumber"
+          :status="order.status"
+          :items="order.items"
+          :total="order.totalPrice"
+        >
+          <template #actions>
+            <Button
+              v-if="order.status !== 'completato'"
+              icon="pi pi-check"
+              :loading="completingId === order.id"
+              text
+              rounded
+              class="rounded-xl text-emerald-600 transition-colors hover:bg-emerald-100"
+              v-tooltip="'Completa ordine'"
+              @click="completeOrder(order.id, $event)"
+            />
+            <Button
+              icon="pi pi-print"
+              :loading="reprintingId === order.id"
+              text
+              rounded
+              class="rounded-xl text-slate-600 transition-colors hover:bg-slate-200/70"
+              v-tooltip="'Ristampa scontrino'"
+              @click="reprintOrder(order.id, $event)"
+            />
+            <Button
+              icon="pi pi-trash"
+              severity="danger"
+              text
+              rounded
+              class="rounded-xl transition-colors hover:bg-red-100"
+              @click="confirmDeleteOrder(order, $event)"
+            />
+          </template>
+        </OrderCard>
+      </div>
     </div>
 
     <div v-if="orders.length === 0" class="rounded-2xl border-2 border-slate-200/70 bg-white/85 p-8 text-center text-zinc-500 backdrop-blur-sm">
@@ -446,13 +406,3 @@ async function proceedCloseDay() {
     </Dialog>
   </div>
 </template>
-
-<style scoped>
-:deep(.p-card-body) {
-  padding: 0;
-}
-
-:deep(.p-card-content) {
-  padding: 1rem;
-}
-</style>

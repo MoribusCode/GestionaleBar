@@ -102,7 +102,8 @@ module.exports = fp(async (fastify, opts) => {
     };
 
     // stampa un resoconto sintetico quando si chiude la giornata: ordini, incasso per
-    // metodo di pagamento, totale. riepilogo: { dayLabel, orderCount, contanti, pos, altro, totale }
+    // metodo di pagamento, articoli venduti, totale.
+    // riepilogo: { dayLabel, orderCount, contanti, pos, altro, totale, items: [{name, quantity, totalPrice}] }
     const stampaResocontoChiusura = async (riepilogo, ip) => {
         const printableWidth = 42;
 
@@ -141,6 +142,19 @@ module.exports = fp(async (fastify, opts) => {
             printer.leftRight("Altro", `${riepilogo.altro.toFixed(2)} EUR`);
         }
         printer.drawLine();
+
+        // solo gli articoli effettivamente venduti (quantità > 0), niente righe vuote per il resto del catalogo
+        if (riepilogo.items && riepilogo.items.length > 0) {
+            printer.bold(true);
+            printer.println("ARTICOLI VENDUTI");
+            printer.bold(false);
+            for (const item of riepilogo.items) {
+                const priceLabel = `${item.totalPrice.toFixed(2)} EUR`;
+                const nameLabel = `${item.name} x${item.quantity}`.slice(0, printableWidth - priceLabel.length - 1);
+                printer.leftRight(nameLabel, priceLabel);
+            }
+            printer.drawLine();
+        }
 
         printer.alignCenter();
         printer.bold(true);

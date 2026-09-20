@@ -54,7 +54,22 @@ module.exports = function (fastify, opts, done) {
                 [id]
             );
 
-            return { transaction, items };
+            const orderRows = await dbAll(
+                `SELECT order_number, created_at, total_price, payment_method, items
+                 FROM transaction_orders
+                 WHERE transaction_id = ?
+                 ORDER BY datetime(created_at) ASC`,
+                [id]
+            );
+            const orders = orderRows.map(row => ({
+                orderNumber: row.order_number,
+                createdAt: row.created_at,
+                totalPrice: row.total_price,
+                paymentMethod: row.payment_method,
+                items: JSON.parse(row.items)
+            }));
+
+            return { transaction, items, orders };
         } catch (err) {
             reply.code(500).send({ message: err.message });
         }

@@ -112,6 +112,21 @@ db.serialize(() => {
       UNIQUE (transaction_id, item_name)
     )
   `);
+
+  // Snapshot dei singoli ordini (con orario) salvato al momento della chiusura, prima di
+  // eliminarli: serve per ricostruire lo storico ordini e l'andamento orario di quella giornata.
+  db.run(`
+    CREATE TABLE IF NOT EXISTS transaction_orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transaction_id INTEGER NOT NULL,
+      order_number INTEGER,
+      created_at TIMESTAMP,
+      total_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+      payment_method TEXT,
+      items TEXT NOT NULL,        -- JSON array di {name, quantity, price}
+      FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE
+    )
+  `);
   // Tabella bar
   db.run(`
     CREATE TABLE IF NOT EXISTS bar (
